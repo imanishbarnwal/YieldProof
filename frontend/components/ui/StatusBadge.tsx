@@ -1,40 +1,45 @@
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Clock, ShieldAlert } from "lucide-react";
+import { CheckCircle2, Clock, ShieldAlert, Loader2, XCircle } from "lucide-react";
 
-type StatusType = "pending" | "verified" | "attested" | "rejected";
+type StatusType = "submitted" | "attesting" | "verified" | "flagged" | "rejected";
 
 interface StatusBadgeProps {
     status: StatusType;
     className?: string;
+    label?: string;
 }
 
-export function StatusBadge({ status, className }: StatusBadgeProps) {
+export function StatusBadge({ status, className, label }: StatusBadgeProps) {
     const styles = {
-        pending: "bg-amber-500/10 text-amber-500 border-amber-500/20",
-        attested: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+        submitted: "bg-slate-500/10 text-slate-500 border-slate-500/20",
+        attesting: "bg-blue-500/10 text-blue-500 border-blue-500/20",
         verified: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+        flagged: "bg-amber-500/10 text-amber-500 border-amber-500/20",
         rejected: "bg-red-500/10 text-red-500 border-red-500/20",
     };
 
     const icons = {
-        pending: Clock,
-        attested: ShieldAlert,
+        submitted: Clock,
+        attesting: Loader2,
         verified: CheckCircle2,
-        rejected: ShieldAlert,
+        flagged: ShieldAlert,
+        rejected: XCircle,
     };
 
-    const Icon = icons[status];
+    // Fallback to Clock if status unknown
+    const Icon = icons[status] || Clock;
+    const style = styles[status] || styles.submitted;
 
     return (
         <div
             className={cn(
                 "flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border",
-                styles[status],
+                style,
                 className
             )}
         >
             <Icon className="w-3.5 h-3.5" />
-            <span className="capitalize">{status}</span>
+            <span className="capitalize">{label || status}</span>
         </div>
     );
 }

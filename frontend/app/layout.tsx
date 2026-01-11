@@ -11,6 +11,7 @@ export const metadata: Metadata = {
 };
 
 import Providers from "@/app/providers";
+import { ContractGuardrail } from "@/components/ContractGuardrail";
 
 // ... (imports)
 
@@ -23,6 +24,7 @@ export default function RootLayout({
         <html lang="en" className="dark">
             <body className={`${inter.className} bg-slate-950 text-white min-h-screen antialiased`}>
                 <Providers>
+                    <ContractGuardrail />
                     <div className="relative flex min-h-screen flex-col">
                         <Navbar />
                         <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">

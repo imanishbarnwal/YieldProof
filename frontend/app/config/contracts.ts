@@ -4,8 +4,10 @@ export const MANTLE_SEPOLIA = {
 };
 
 export const CONTRACTS = {
+    // FINAL DEPLOYMENT - MANTLE SEPOLIA (Chain 5003)
+    // DO NOT REDEPLOY - JAN 2026
     AttestorRegistry: {
-        address: "0x0C36f096f7677D4aD9351b2a511D41F6B6d05FD1",
+        address: "0x226BA1F39135D7BCb2DE29365DF077D17b66Ca73",
         abi: [
             {
                 "inputs": [],
@@ -102,6 +104,31 @@ export const CONTRACTS = {
                 "inputs": [
                     {
                         "indexed": true,
+                        "internalType": "uint256",
+                        "name": "claimId",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "attestor",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "string",
+                        "name": "reason",
+                        "type": "string"
+                    }
+                ],
+                "name": "ClaimFlagged",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
                         "internalType": "address",
                         "name": "previousOwner",
                         "type": "address"
@@ -151,6 +178,24 @@ export const CONTRACTS = {
             {
                 "inputs": [
                     {
+                        "internalType": "uint256",
+                        "name": "claimId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "reason",
+                        "type": "string"
+                    }
+                ],
+                "name": "flagClaim",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
                         "internalType": "address",
                         "name": "",
                         "type": "address"
@@ -167,6 +212,25 @@ export const CONTRACTS = {
                         "internalType": "uint256",
                         "name": "stake",
                         "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "claimId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "getAttestors",
+                "outputs": [
+                    {
+                        "internalType": "address[]",
+                        "name": "",
+                        "type": "address[]"
                     }
                 ],
                 "stateMutability": "view",
@@ -270,6 +334,25 @@ export const CONTRACTS = {
             {
                 "inputs": [
                     {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "attestorCountPerClaim",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
                         "internalType": "address",
                         "name": "newOwner",
                         "type": "address"
@@ -283,7 +366,7 @@ export const CONTRACTS = {
         ]
     },
     YieldProof: {
-        address: "0xB4b394aac616eDB000dD9d8b7E6745A09DC25F14",
+        address: "0x6D9b87f2550b3526A3a6A5CB2bC3673D35fb9c6C",
         abi: [
             {
                 "inputs": [
@@ -441,6 +524,19 @@ export const CONTRACTS = {
                 "type": "function"
             },
             {
+                "inputs": [],
+                "name": "MIN_REQUIRED_ATTESTORS",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
                 "inputs": [
                     {
                         "internalType": "string",
@@ -502,7 +598,7 @@ export const CONTRACTS = {
         ]
     },
     YieldVault: {
-        address: "0xf8fE246A7CA72113ABf5aF5fEE740a69D9EdFf82",
+        address: "0x40a591Bfb41500F503eFe0b991eD199E606E41b9",
         abi: [
             {
                 "inputs": [
@@ -706,5 +802,5 @@ export const CONTRACTS = {
                 "type": "function"
             }
         ]
-    }
+    },
 };
