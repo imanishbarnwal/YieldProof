@@ -1,0 +1,13 @@
+# Pitch Notes
+
+## Problem
+Describe the problem here...
+
+## Solution
+Describe how YieldProof solves it...
+
+## Market
+Target audience...
+
+## Business Model
+How it makes money...
