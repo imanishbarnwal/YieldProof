@@ -10,18 +10,26 @@ export const metadata: Metadata = {
     description: "Proof-based yield verification for Real World Assets",
 };
 
+import Providers from "@/app/providers";
+
+// ... (imports)
+
 export default function RootLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
     return (
-        <html lang="en">
-            <body className={inter.className}>
-                <Navbar />
-                <main className="max-w-7xl mx-auto px-6 py-8">
-                    {children}
-                </main>
+        <html lang="en" className="dark">
+            <body className={`${inter.className} bg-slate-950 text-white min-h-screen antialiased`}>
+                <Providers>
+                    <div className="relative flex min-h-screen flex-col">
+                        <Navbar />
+                        <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
+                            {children}
+                        </main>
+                    </div>
+                </Providers>
             </body>
         </html>
     );

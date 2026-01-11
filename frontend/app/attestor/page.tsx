@@ -1,8 +1,11 @@
 "use client";
 
 import React, { useState } from 'react';
-import Navbar from '../../components/Navbar';
-import StatusBadge from '../../components/StatusBadge';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { MOCK_CLAIMS } from '@/lib/demoData';
+import { UserCheck, ShieldCheck, ExternalLink } from 'lucide-react';
 
 // Mock data types
 interface Claim {
@@ -10,49 +13,31 @@ interface Claim {
     assetId: string;
     period: string;
     yieldAmount: number;
-    status: 'Pending' | 'Attested' | 'Approved' | 'Challenged';
+    status: 'pending' | 'attested' | 'verified' | 'rejected';
     currentStake: number;
 }
 
 export default function AttestorPage() {
     // Mock attestor state
-    const [stakeBalance, setStakeBalance] = useState(5.0); // 5 ETH
+    const [stakeBalance, setStakeBalance] = useState(5.0); // 5 MNT
 
-    // Mock claims data
-    const [claims, setClaims] = useState<Claim[]>([
-        {
-            id: 1,
-            assetId: 'MANTLE-ETH-LP',
-            period: 'OCT 2023',
-            yieldAmount: 1540.50,
-            status: 'Pending',
-            currentStake: 0.5,
-        },
-        {
-            id: 3,
-            assetId: 'USDC-RWA-VAULT',
-            period: 'Q3 2023',
-            yieldAmount: 50000.00,
-            status: 'Pending',
-            currentStake: 1.2,
-        },
-        {
-            id: 2,
-            assetId: 'MANTLE-ETH-LP',
-            period: 'SEP 2023',
-            yieldAmount: 1420.00,
-            status: 'Attested',
-            currentStake: 3.5,
-        },
-    ]);
+    // Mock claims data - combining demo data with extra field
+    const [claims, setClaims] = useState<Claim[]>(
+        // @ts-ignore
+        MOCK_CLAIMS.map(c => ({
+            ...c,
+            status: c.status,
+            currentStake: parseFloat(c.totalStake || '0') // Parse rough estimate
+        }))
+    );
 
     const handleAttest = (claimId: number) => {
         setClaims(prev => prev.map(claim => {
             if (claim.id === claimId) {
                 return {
                     ...claim,
-                    status: 'Attested',
-                    currentStake: claim.currentStake + 1.0 // Mock adding 1 ETH stake
+                    status: 'attested',
+                    currentStake: claim.currentStake + 1.0
                 };
             }
             return claim;
@@ -60,122 +45,114 @@ export default function AttestorPage() {
     };
 
     const handleAddStake = () => {
-        // Mock deposit
         setStakeBalance(prev => prev + 1.0);
     };
 
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-200 font-sans">
-            <Navbar />
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex flex-col gap-2">
+                <h1 className="text-3xl font-bold tracking-tight text-white">Attestor Dashboard</h1>
+                <p className="text-slate-400">Verify yield claims and stake MNT to validate them.</p>
+            </div>
 
-            <main className="max-w-7xl mx-auto px-6 py-12">
-                <div className="flex flex-col lg:flex-row gap-8">
+            <div className="grid gap-8 lg:grid-cols-12">
+                {/* Sidebar: Attestor Profile / Stake */}
+                <div className="lg:col-span-4">
+                    <Card className="sticky top-8 border-indigo-900/40 bg-indigo-950/10 backdrop-blur-sm overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
 
-                    {/* Sidebar: Attestor Profile / Stake */}
-                    <div className="w-full lg:w-1/3">
-                        <div className="sticky top-8 space-y-6">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <UserCheck className="h-5 w-5 text-indigo-400" />
+                                Your Profile
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div>
+                                <p className="text-sm font-medium text-slate-400">Total Staked</p>
+                                <p className="text-3xl font-mono font-bold text-indigo-400">{stakeBalance.toFixed(2)} MNT</p>
+                            </div>
 
-                            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl relative overflow-hidden">
-                                {/* Decorative background element */}
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
-
-                                <h2 className="text-xl font-bold text-white mb-4">Attestor Dashboard</h2>
-
-                                <div className="mb-6">
-                                    <p className="text-sm text-slate-400 mb-1">Your Total Stake</p>
-                                    <p className="text-4xl font-mono text-indigo-400 font-semibold">{stakeBalance.toFixed(2)} ETH</p>
+                            <div className="space-y-3 p-4 rounded-lg bg-slate-900/50 border border-slate-800">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-slate-400">Trust Score</span>
+                                    <span className="text-emerald-400 font-medium">98/100</span>
                                 </div>
-
-                                <div className="space-y-3">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-400">Trust Score</span>
-                                        <span className="text-emerald-400 font-medium">98/100</span>
-                                    </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-400">Active Attestations</span>
-                                        <span className="text-white font-medium">12</span>
-                                    </div>
-                                </div>
-
-                                <div className="mt-8 pt-6 border-t border-slate-800">
-                                    <button
-                                        onClick={handleAddStake}
-                                        className="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-lg border border-slate-700 transition-colors flex items-center justify-center gap-2"
-                                    >
-                                        <span>+ Stake More ETH</span>
-                                    </button>
-                                    <p className="text-xs text-center text-slate-500 mt-2">Staking increases your voting weight.</p>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-slate-400">Active Attestations</span>
+                                    <span className="text-slate-200 font-medium">12</span>
                                 </div>
                             </div>
 
-                        </div>
-                    </div>
+                            <Button
+                                onClick={handleAddStake}
+                                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white"
+                            >
+                                + Stake More MNT
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
 
-                    {/* Main Content: Pending Claims */}
-                    <div className="w-full lg:w-2/3 space-y-6">
-                        <div>
-                            <h2 className="text-2xl font-bold text-white mb-2">Pending Verifications</h2>
-                            <p className="text-slate-400">Review and attest to the validity of these yield claims.</p>
-                        </div>
+                {/* Main Content: Pending Claims */}
+                <div className="lg:col-span-8 space-y-6">
+                    <h2 className="text-xl font-semibold text-white">Pending Verifications</h2>
 
-                        <div className="grid gap-4">
-                            {claims.map((claim) => (
-                                <div
-                                    key={claim.id}
-                                    className={`group bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-lg hover:border-indigo-500/30 transition-all ${claim.status === 'Attested' ? 'opacity-75' : 'opacity-100'
-                                        }`}
-                                >
-                                    <div className="flex flex-col md:flex-row justify-between gap-4 md:items-center">
-                                        <div className="space-y-1">
+                    <div className="grid gap-4">
+                        {claims.map((claim) => (
+                            <Card
+                                key={claim.id}
+                                className={`border-slate-800 bg-slate-900/30 transition-all hover:border-slate-700 ${claim.status === 'attested' ? 'opacity-75 border-indigo-500/20 bg-indigo-900/5' : ''
+                                    }`}
+                            >
+                                <CardContent className="p-6">
+                                    <div className="flex flex-col md:flex-row justify-between gap-6">
+                                        <div className="space-y-2">
                                             <div className="flex items-center gap-3">
                                                 <h3 className="text-lg font-semibold text-white">{claim.assetId}</h3>
                                                 <StatusBadge status={claim.status} />
                                             </div>
-                                            <p className="text-sm text-slate-400">Period: <span className="text-slate-300">{claim.period}</span></p>
+                                            <p className="text-sm text-slate-400">Period: <span className="text-slate-300 font-medium">{claim.period}</span></p>
                                         </div>
 
                                         <div className="flex items-center gap-8">
                                             <div className="text-right">
-                                                <p className="text-xs text-slate-500 uppercase tracking-wider">Yield Claimed</p>
-                                                <p className="font-mono text-emerald-400 text-lg">{claim.yieldAmount.toLocaleString()}</p>
+                                                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Yield</p>
+                                                <p className="font-mono text-emerald-400 text-lg font-medium">{claim.yieldAmount.toLocaleString()}</p>
                                             </div>
-
                                             <div className="text-right">
-                                                <p className="text-xs text-slate-500 uppercase tracking-wider">Current Stake</p>
-                                                <p className="font-mono text-indigo-400 text-lg">{claim.currentStake.toFixed(1)} ETH</p>
+                                                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Stake</p>
+                                                <p className="font-mono text-indigo-400 text-lg font-medium">{claim.currentStake.toFixed(1)} MNT</p>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Actions Footer */}
-                                    <div className="mt-6 pt-4 border-t border-slate-800 flex justify-between items-center text-sm">
-                                        <span className="text-slate-500">
-                                            Proof: <a href="#" className="text-blue-400 hover:underline decoration-blue-500/30 underline-offset-2">View Documents ↗</a>
-                                        </span>
+                                    <div className="mt-6 pt-4 border-t border-slate-800 flex justify-between items-center">
+                                        <Button variant="link" className="h-auto p-0 text-slate-400 hover:text-white">
+                                            View Documents <ExternalLink className="ml-1 h-3 w-3" />
+                                        </Button>
 
-                                        {claim.status === 'Pending' ? (
-                                            <button
+                                        {claim.status === 'pending' || claim.status === 'verified' ? (
+                                            <Button
                                                 onClick={() => handleAttest(claim.id)}
-                                                className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg shadow-lg shadow-indigo-900/20 transition-all transform active:scale-95"
+                                                className="bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-900/20"
                                             >
-                                                Attest & Stake 1 ETH
-                                            </button>
+                                                <ShieldCheck className="mr-2 h-4 w-4" />
+                                                Attest & Stake 1 MNT
+                                            </Button>
                                         ) : (
-                                            <span className="px-4 py-2 text-indigo-300 bg-indigo-500/10 rounded-lg border border-indigo-500/20 flex items-center gap-2">
-                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                </svg>
-                                                Attested
-                                            </span>
+                                            <div className="flex items-center gap-2 text-indigo-400 bg-indigo-950/30 px-3 py-1.5 rounded-md border border-indigo-500/20">
+                                                <ShieldCheck className="h-4 w-4" />
+                                                <span className="text-sm font-medium">Attested</span>
+                                            </div>
                                         )}
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                </CardContent>
+                            </Card>
+                        ))}
                     </div>
-
                 </div>
-            </main>
+            </div>
         </div>
     );
 }
