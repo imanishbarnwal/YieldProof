@@ -120,7 +120,7 @@ export default function AttestorPage() {
     });
 
     // Read: Attestor Count per Claim (for consistency check)
-    const { data: attestorCountsData } = useReadContracts({
+    const { data: attestorCountsData, refetch: refetchAttestorCounts } = useReadContracts({
         contracts: claimIndexes.map(id => ({
             address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
             abi: CONTRACTS.AttestorRegistry.abi as Abi,
@@ -245,8 +245,9 @@ export default function AttestorPage() {
             refetchTotalClaims();
             refetchClaimStakes();
             refetchAttestorsList();
+            refetchAttestorCounts();
         }
-    }, [isConfirmed, refetchAttestor, refetchClaims, refetchHasAttested, refetchTotalClaims, refetchClaimStakes, refetchAttestorsList]);
+    }, [isConfirmed, refetchAttestor, refetchClaims, refetchHasAttested, refetchTotalClaims, refetchClaimStakes, refetchAttestorsList, refetchAttestorCounts]);
 
 
     // Handlers

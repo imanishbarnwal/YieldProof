@@ -154,10 +154,11 @@ export default function IssuerPage() {
             });
             refetchTotal();
             refetchClaims();
+            refetchClaimStakes();
             // In a real app, show toast here
             alert("Claim submitted successfully!");
         }
-    }, [isConfirmed, refetchTotal, refetchClaims]);
+    }, [isConfirmed, refetchTotal, refetchClaims, refetchClaimStakes]);
 
 
     // State for form inputs

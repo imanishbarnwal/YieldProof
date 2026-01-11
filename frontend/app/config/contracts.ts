@@ -598,7 +598,7 @@ export const CONTRACTS = {
         ]
     },
     YieldVault: {
-        address: "0x40a591Bfb41500F503eFe0b991eD199E606E41b9",
+        address: "0x55012496333900FC101890371dA5A72Ad079980D",
         abi: [
             {
                 "inputs": [
@@ -737,6 +737,25 @@ export const CONTRACTS = {
                 "type": "function"
             },
             {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "isClaimed",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
                 "inputs": [],
                 "name": "minTotalStake",
                 "outputs": [
@@ -803,4 +822,5 @@ export const CONTRACTS = {
             }
         ]
     },
+
 };
