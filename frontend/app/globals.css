@@ -1,16 +1,53 @@
+@import '@rainbow-me/rainbowkit/styles.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import '@rainbow-me/rainbowkit/styles.css';
 
 :root {
   --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 10, 10, 10;
-  --background-end-rgb: 0, 0, 0;
+  --background-start-rgb: 8, 15, 31;
+  --background-end-rgb: 15, 23, 42;
 }
 
 @layer base {
   body {
     @apply bg-slate-950 text-white min-h-screen selection:bg-indigo-500/30;
+    background: linear-gradient(135deg, rgb(8, 15, 31) 0%, rgb(15, 23, 42) 50%, rgb(30, 41, 59) 100%);
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-slate-900/50;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-indigo-500/50 rounded-full;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-indigo-400/70;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-gradient-to-br from-slate-800/60 to-slate-900/40 backdrop-blur-xl border border-slate-700/50;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+  
+  .accent-glow {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+  }
+  
+  .success-glow {
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.15);
+  }
+  
+  .warning-glow {
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
   }
 }

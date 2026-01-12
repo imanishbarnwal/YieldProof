@@ -1,19 +1,50 @@
+"use client"
+
 import * as React from "react"
 import { cn } from "@/lib/utils"
+import { motion, HTMLMotionProps } from "framer-motion"
 
-const Card = React.forwardRef<
-    HTMLDivElement,
-    React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-    <div
-        ref={ref}
-        className={cn(
-            "rounded-xl border border-slate-800 bg-slate-950/50 text-slate-100 shadow-sm backdrop-blur-xl",
-            className
-        )}
-        {...props}
-    />
-))
+interface CardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, keyof HTMLMotionProps<"div">>, HTMLMotionProps<"div"> {
+    hover?: boolean
+    variant?: "default" | "accent" | "success" | "warning"
+}
+
+const Card = React.forwardRef<HTMLDivElement, CardProps>(
+    ({ className, hover = true, variant = "default", children, ...props }, ref) => {
+        const variantClasses: Record<NonNullable<CardProps['variant']>, string> = {
+            default: "glass-card",
+            accent: "glass-card accent-glow border-indigo-500/30",
+            success: "glass-card success-glow border-emerald-500/30",
+            warning: "glass-card warning-glow border-amber-500/30"
+        }
+
+        return (
+            <motion.div
+                ref={ref}
+                className={cn(
+                    "rounded-xl group",
+                    variantClasses[variant as keyof typeof variantClasses],
+                    hover && "hover:shadow-2xl transition-all duration-300",
+                    className
+                )}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                whileHover={hover ? { 
+                    y: -4,
+                    transition: { duration: 0.2 }
+                } : undefined}
+                {...props}
+            >
+                {/* Subtle gradient overlay */}
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-indigo-500/5 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative z-10">
+                    {children}
+                </div>
+            </motion.div>
+        )
+    }
+)
 Card.displayName = "Card"
 
 const CardHeader = React.forwardRef<
@@ -35,7 +66,7 @@ const CardTitle = React.forwardRef<
     <h3
         ref={ref}
         className={cn(
-            "text-2xl font-semibold leading-none tracking-tight",
+            "text-lg font-semibold leading-none tracking-tight text-white",
             className
         )}
         {...props}
@@ -49,7 +80,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
     <p
         ref={ref}
-        className={cn("text-sm text-slate-400", className)}
+        className={cn("text-sm text-slate-400 leading-relaxed", className)}
         {...props}
     />
 ))

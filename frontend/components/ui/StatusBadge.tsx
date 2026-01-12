@@ -11,11 +11,11 @@ interface StatusBadgeProps {
 
 export function StatusBadge({ status, className, label }: StatusBadgeProps) {
     const styles = {
-        submitted: "bg-slate-500/10 text-slate-500 border-slate-500/20",
-        attesting: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-        verified: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
-        flagged: "bg-amber-500/10 text-amber-500 border-amber-500/20",
-        rejected: "bg-red-500/10 text-red-500 border-red-500/20",
+        submitted: "bg-muted text-muted-foreground border-border",
+        attesting: "bg-primary/10 text-primary border-primary/20",
+        verified: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+        flagged: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+        rejected: "bg-destructive/10 text-destructive border-destructive/20",
     };
 
     const icons = {
@@ -33,13 +33,13 @@ export function StatusBadge({ status, className, label }: StatusBadgeProps) {
     return (
         <div
             className={cn(
-                "flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border",
+                "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-light border backdrop-blur-sm tracking-wide",
                 style,
                 className
             )}
         >
-            <Icon className="w-3.5 h-3.5" />
-            <span className="capitalize">{label || status}</span>
+            <Icon className={cn("w-3.5 h-3.5", status === "attesting" && "animate-spin")} />
+            <span className="capitalize font-light">{label || status}</span>
         </div>
     );
 }

@@ -13,6 +13,6 @@
     "contracts:deploy": "npm run deploy --workspace=contracts"
   },
   "devDependencies": {
-    "concurrently": "^8.0.0"
+    "concurrently": "^9.0.0"
   }
 }

@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Ensure Node.js runtime (required for Pinata upload)
-export const runtime = "nodejs";
-
 export async function POST(req: NextRequest) {
   try {
     // ✅ ENV CHECK (temporary – remove after verification)

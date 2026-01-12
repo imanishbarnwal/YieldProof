@@ -1,19 +1,28 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Poppins } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import Providers from "@/app/providers";
+import { ContractGuardrail } from "@/components/ContractGuardrail";
 
-const inter = Inter({ subsets: ["latin"] });
+const poppins = Poppins({ 
+    subsets: ["latin"],
+    weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+    variable: "--font-poppins",
+    display: 'swap', // Optimize font loading
+});
 
 export const metadata: Metadata = {
     title: "YieldProof",
     description: "Proof-based yield verification for Real World Assets",
+    keywords: ["DeFi", "RWA", "Yield", "Blockchain", "Verification"],
+    authors: [{ name: "YieldProof Team" }],
 };
 
-import Providers from "@/app/providers";
-import { ContractGuardrail } from "@/components/ContractGuardrail";
-
-// ... (imports)
+export const viewport: Viewport = {
+    width: "device-width",
+    initialScale: 1,
+};
 
 export default function RootLayout({
     children,
@@ -22,7 +31,7 @@ export default function RootLayout({
 }) {
     return (
         <html lang="en" className="dark">
-            <body className={`${inter.className} bg-slate-950 text-white min-h-screen antialiased`}>
+            <body className={`${poppins.variable} font-sans antialiased`}>
                 <Providers>
                     <ContractGuardrail />
                     <div className="relative flex min-h-screen flex-col">
