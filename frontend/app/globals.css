@@ -180,6 +180,37 @@
   }
 }
 
+/* Custom dropdown styling for better dark theme support */
+select option {
+  background-color: rgb(30 41 59) !important;
+  /* slate-800 */
+  color: white !important;
+  padding: 8px 12px;
+}
+
+select option:checked {
+  background-color: rgb(99 102 241) !important;
+  /* indigo-500 */
+  color: white !important;
+}
+
+select option:hover {
+  background-color: rgb(51 65 85) !important;
+  /* slate-700 */
+  color: white !important;
+}
+
+/* Ensure dropdown arrow is visible */
+select::-ms-expand {
+  display: none;
+}
+
+/* Firefox dropdown styling */
+select {
+  -moz-appearance: none;
+  -webkit-appearance: none;
+}
+
 /* ConnectButton styling to match site design */
 .connect-button-wrapper button[data-testid="rk-connect-button"] {
   @apply bg-slate-800/50 hover:bg-slate-700/50 border border-slate-600/50 hover:border-slate-500/50 text-white font-light px-4 py-2 rounded-xl transition-all duration-300 backdrop-blur-sm;

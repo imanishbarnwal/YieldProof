@@ -5,8 +5,9 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { AnimatedSection, StaggeredContainer } from '@/components/ui/AnimatedSection';
-import { 
+import {
     Wallet,
     TrendingUp,
     ShieldCheck,
@@ -27,7 +28,12 @@ import {
     PieChart,
     BarChart3,
     DollarSign,
-    Star
+    Star,
+    Filter,
+    SortAsc,
+    SortDesc,
+    Search,
+    RefreshCw
 } from 'lucide-react';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useReadContracts } from 'wagmi';
 import { formatEther, parseEther, type Abi } from 'viem';
@@ -76,6 +82,12 @@ export default function InvestorPage() {
     const [depositAmount, setDepositAmount] = useState('');
     const [withdrawAmount, setWithdrawAmount] = useState('');
     const [selectedVault, setSelectedVault] = useState('YieldProof Demo Vault');
+
+    // Sort and filter state for active disclosures
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState<'all' | 'submitted' | 'attesting' | 'verified'>('all');
+    const [sortBy, setSortBy] = useState<'yieldAmount' | 'period' | 'status' | 'yourShare' | 'timestamp'>('timestamp');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
     // Contract Write Hook
     const { writeContract, data: hash, isPending: isWritePending } = useWriteContract();
@@ -132,15 +144,15 @@ export default function InvestorPage() {
     // Process claims data into active disclosures
     const activeDisclosures = (claimsData?.map((claimResult, index) => {
         if (!claimResult.result) return null;
-        
+
         const claim = claimResult.result as any[];
         const stakeResult = claimStakesData?.[index];
         const totalStake = stakeResult?.result ? Number(formatEther(stakeResult.result as bigint)) : 0;
-        
+
         // Determine status based on claim status and stake
         let status = 'submitted';
         let attestationProgress = 0;
-        
+
         if (claim[6] === 1) { // ClaimStatus.Attested
             status = 'attesting';
             attestationProgress = Math.min(100, (totalStake / 0.1) * 100); // Assuming 0.1 ETH minimum
@@ -162,15 +174,58 @@ export default function InvestorPage() {
         };
     }).filter((d): d is NonNullable<typeof d> => d !== null)) || [];
 
+    // Filter and sort active disclosures
+    const filteredAndSortedDisclosures = activeDisclosures
+        .filter(disclosure => {
+            // Search filter
+            const matchesSearch = searchTerm === '' ||
+                disclosure.assetId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                disclosure.period.toLowerCase().includes(searchTerm.toLowerCase());
+
+            // Status filter
+            const matchesStatus = statusFilter === 'all' || disclosure.status === statusFilter;
+
+            return matchesSearch && matchesStatus;
+        })
+        .sort((a, b) => {
+            let comparison = 0;
+
+            switch (sortBy) {
+                case 'yieldAmount':
+                    comparison = a.yieldAmount - b.yieldAmount;
+                    break;
+                case 'period':
+                    comparison = a.period.localeCompare(b.period);
+                    break;
+                case 'status':
+                    const statusOrder = { 'submitted': 0, 'attesting': 1, 'verified': 2 };
+                    comparison = statusOrder[a.status as keyof typeof statusOrder] - statusOrder[b.status as keyof typeof statusOrder];
+                    break;
+                case 'yourShare':
+                    comparison = a.yourShare - b.yourShare;
+                    break;
+                case 'timestamp':
+                    // Sort by ID (higher ID = newer)
+                    const aId = parseInt(a.id.replace('disc-', ''));
+                    const bId = parseInt(b.id.replace('disc-', ''));
+                    comparison = bId - aId; // Default to newest first, will be reversed if asc
+                    break;
+                default:
+                    comparison = 0;
+            }
+
+            return sortOrder === 'asc' ? comparison : -comparison;
+        });
+
     // Calculate vault metrics
     const userBalanceEth = userBalance ? Number(formatEther(userBalance as bigint)) : 0;
     const totalDepositsEth = totalDeposits ? Number(formatEther(totalDeposits as bigint)) : 0;
-    
+
     const vaultMetrics = {
         principalEscrow: userBalanceEth,
         verifiedDistribution: 0, // This would need additional contract logic
         realizedPerformance: 0, // This would need additional contract logic
-        totalActiveDisclosures: activeDisclosures.length
+        totalActiveDisclosures: filteredAndSortedDisclosures.length
     };
 
     // Refetch data when transaction is confirmed
@@ -213,7 +268,7 @@ export default function InvestorPage() {
 
         try {
             const claimIdBigInt = BigInt(claimId.replace('disc-', ''));
-            
+
             writeContract({
                 address: CONTRACTS.YieldVault.address as `0x${string}`,
                 abi: CONTRACTS.YieldVault.abi as Abi,
@@ -277,343 +332,500 @@ export default function InvestorPage() {
     return (
         <div className="min-h-screen bg-slate-950 text-white">
             <div className="max-w-7xl mx-auto px-6 py-8">
-            {/* Hero Section */}
-            <AnimatedSection className="mb-12">
-                <div className="text-center space-y-8 max-w-4xl mx-auto">
-                    <div className="flex items-center justify-center gap-3 mb-6">
-                        <Badge variant="success" className="px-4 py-2 text-sm font-medium rounded-full" pulse>
-                            <div className="w-2 h-2 bg-emerald-400 rounded-full mr-2 animate-pulse" />
-                            Beta Vault
-                        </Badge>
-                        <Badge variant="default" className="px-4 py-2 text-sm font-medium rounded-full">
-                            <Star className="w-3 h-3 mr-1" />
-                            Testnet
-                        </Badge>
+                {/* Hero Section */}
+                <AnimatedSection className="mb-12">
+                    <div className="text-center space-y-8 max-w-4xl mx-auto">
+                        <div className="flex items-center justify-center gap-3 mb-6">
+                            <Badge variant="success" className="px-4 py-2 text-sm font-medium rounded-full" pulse>
+                                <div className="w-2 h-2 bg-emerald-400 rounded-full mr-2 animate-pulse" />
+                                Beta Vault
+                            </Badge>
+                            <Badge variant="default" className="px-4 py-2 text-sm font-medium rounded-full">
+                                <Star className="w-3 h-3 mr-1" />
+                                Testnet
+                            </Badge>
+                        </div>
+
+                        <div className="space-y-6">
+                            <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-tight">
+                                YieldProof Beta Vault
+                            </h1>
+                            <p className="text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed font-light">
+                                This environment uses testnet capital at no risk. Experience transparent yield verification.
+                            </p>
+                        </div>
                     </div>
-                    
-                    <div className="space-y-6">
-                        <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-tight">
-                            YieldProof Beta Vault
-                        </h1>
-                        <p className="text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed font-light">
-                            This environment uses testnet capital at no risk. Experience transparent yield verification.
-                        </p>
-                    </div>
-                </div>
-            </AnimatedSection>
+                </AnimatedSection>
 
-            {/* Vault Metrics */}
-            <AnimatedSection delay={0.1} className="mb-8">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <Card variant="accent" className="p-6">
-                        <div className="flex items-center gap-3 mb-2">
-                            <Wallet className="w-5 h-5 text-indigo-400" />
-                            <span className="text-sm text-slate-400 uppercase">Principal Escrow</span>
-                        </div>
-                        <div className="text-3xl font-semibold text-white mb-1">
-                            {vaultMetrics.principalEscrow.toFixed(4)}
-                        </div>
-                        <div className="text-sm text-slate-400">MNT</div>
-                        <div className="flex gap-2 mt-4">
-                            <Button 
-                                size="sm" 
-                                variant="default"
-                                onClick={() => document.getElementById('deposit-section')?.scrollIntoView({ behavior: 'smooth' })}
-                            >
-                                Add Capital
-                            </Button>
-                            <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => document.getElementById('withdraw-section')?.scrollIntoView({ behavior: 'smooth' })}
-                            >
-                                Withdraw
-                            </Button>
-                        </div>
-                    </Card>
-
-                    <Card className="p-6">
-                        <div className="flex items-center gap-3 mb-2">
-                            <TrendingUp className="w-5 h-5 text-slate-400" />
-                            <span className="text-sm text-slate-400 uppercase">Verified Distribution</span>
-                        </div>
-                        <div className="text-3xl font-semibold text-white mb-1">
-                            {vaultMetrics.verifiedDistribution.toFixed(4)}
-                        </div>
-                        <div className="text-sm text-slate-400">MNT</div>
-                        <div className="text-xs text-slate-500 mt-2">
-                            {activeDisclosures.filter(d => d.status === 'verified').length > 0 ? 'No Active Yield' : 'Settled via Verification'}
-                        </div>
-                    </Card>
-
-                    <Card className="p-6">
-                        <div className="flex items-center gap-3 mb-2">
-                            <BarChart3 className="w-5 h-5 text-slate-400" />
-                            <span className="text-sm text-slate-400 uppercase">Realized Performance</span>
-                        </div>
-                        <div className="text-3xl font-semibold text-white mb-1">
-                            {vaultMetrics.realizedPerformance.toFixed(4)}
-                        </div>
-                        <div className="text-sm text-slate-400">MNT</div>
-                        <div className="text-xs text-slate-500 mt-2">
-                            {vaultMetrics.realizedPerformance > 0 ? 'Settled via Verification' : 'Settled via Verification'}
-                        </div>
-                    </Card>
-                </div>
-            </AnimatedSection>
-
-            {/* Capital Management */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                {/* Add Capital */}
-                <AnimatedSection delay={0.2}>
-                    <Card id="deposit-section" className="p-6">
-                        <CardHeader className="p-0 mb-6">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-lg flex items-center justify-center shadow-lg">
-                                    <Plus className="w-5 h-5 text-white" />
-                                </div>
-                                <div>
-                                    <CardTitle className="text-white">Add Capital</CardTitle>
-                                    <CardDescription className="text-slate-400">
-                                        Deposit funds into the vault escrow
-                                    </CardDescription>
-                                </div>
+                {/* Vault Metrics */}
+                <AnimatedSection delay={0.1} className="mb-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <Card variant="accent" className="p-6">
+                            <div className="flex items-center gap-3 mb-2">
+                                <Wallet className="w-5 h-5 text-indigo-400" />
+                                <span className="text-sm text-slate-400 uppercase">Principal Escrow</span>
                             </div>
-                        </CardHeader>
-
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-2">Vault</label>
-                                <select 
-                                    value={selectedVault}
-                                    onChange={(e) => setSelectedVault(e.target.value)}
-                                    className="w-full bg-gradient-to-br from-slate-800/60 to-slate-900/40 border border-slate-600/50 rounded-lg px-3 py-2 text-white"
+                            <div className="text-3xl font-semibold text-white mb-1">
+                                {vaultMetrics.principalEscrow.toFixed(4)}
+                            </div>
+                            <div className="text-sm text-slate-400">MNT</div>
+                            <div className="flex gap-2 mt-4">
+                                <Button
+                                    size="sm"
+                                    variant="default"
+                                    onClick={() => document.getElementById('deposit-section')?.scrollIntoView({ behavior: 'smooth' })}
                                 >
-                                    <option>YieldProof Demo Vault</option>
-                                </select>
+                                    Add Capital
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => document.getElementById('withdraw-section')?.scrollIntoView({ behavior: 'smooth' })}
+                                >
+                                    Withdraw
+                                </Button>
                             </div>
+                        </Card>
 
-                            <Input
-                                label="Amount (MNT)"
-                                placeholder="0.00"
-                                value={depositAmount}
-                                onChange={(e) => setDepositAmount(e.target.value)}
-                                className="bg-gradient-to-br from-slate-800/60 to-slate-900/40 border-slate-600/50 text-white"
-                            />
+                        <Card className="p-6">
+                            <div className="flex items-center gap-3 mb-2">
+                                <TrendingUp className="w-5 h-5 text-slate-400" />
+                                <span className="text-sm text-slate-400 uppercase">Verified Distribution</span>
+                            </div>
+                            <div className="text-3xl font-semibold text-white mb-1">
+                                {vaultMetrics.verifiedDistribution.toFixed(4)}
+                            </div>
+                            <div className="text-sm text-slate-400">MNT</div>
+                            <div className="text-xs text-slate-500 mt-2">
+                                {activeDisclosures.filter(d => d.status === 'verified').length > 0 ? 'No Active Yield' : 'Settled via Verification'}
+                            </div>
+                        </Card>
 
-                            <Button
-                                onClick={handleDeposit}
-                                disabled={isWritePending || isConfirming || !isConnected}
-                                className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white"
-                            >
-                                {isWritePending || isConfirming ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        {isWritePending ? 'Confirming...' : 'Processing...'}
-                                    </>
-                                ) : (
-                                    <>
-                                        <Plus className="mr-2 h-4 w-4" />
-                                        Add Capital
-                                    </>
-                                )}
-                            </Button>
-                        </div>
-                    </Card>
+                        <Card className="p-6">
+                            <div className="flex items-center gap-3 mb-2">
+                                <BarChart3 className="w-5 h-5 text-slate-400" />
+                                <span className="text-sm text-slate-400 uppercase">Realized Performance</span>
+                            </div>
+                            <div className="text-3xl font-semibold text-white mb-1">
+                                {vaultMetrics.realizedPerformance.toFixed(4)}
+                            </div>
+                            <div className="text-sm text-slate-400">MNT</div>
+                            <div className="text-xs text-slate-500 mt-2">
+                                {vaultMetrics.realizedPerformance > 0 ? 'Settled via Verification' : 'Settled via Verification'}
+                            </div>
+                        </Card>
+                    </div>
                 </AnimatedSection>
 
-                {/* Withdraw */}
-                <AnimatedSection delay={0.3}>
-                    <Card id="withdraw-section" className="p-6">
-                        <CardHeader className="p-0 mb-6">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-gradient-to-r from-slate-600 to-slate-700 rounded-lg flex items-center justify-center shadow-lg">
-                                    <Minus className="w-5 h-5 text-white" />
+                {/* Capital Management */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                    {/* Add Capital */}
+                    <AnimatedSection delay={0.2}>
+                        <Card id="deposit-section" className="p-6">
+                            <CardHeader className="p-0 mb-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-lg flex items-center justify-center shadow-lg">
+                                        <Plus className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div>
+                                        <CardTitle className="text-white">Add Capital</CardTitle>
+                                        <CardDescription className="text-slate-400">
+                                            Deposit funds into the vault escrow
+                                        </CardDescription>
+                                    </div>
                                 </div>
+                            </CardHeader>
+
+                            <div className="space-y-4">
                                 <div>
-                                    <CardTitle className="text-white">Withdraw</CardTitle>
-                                    <CardDescription className="text-slate-400">
-                                        Withdraw available funds from vault
-                                    </CardDescription>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">Vault</label>
+                                    <select
+                                        value={selectedVault}
+                                        onChange={(e) => setSelectedVault(e.target.value)}
+                                        className="w-full bg-gradient-to-br from-slate-800/60 to-slate-900/40 border border-slate-600/50 rounded-lg px-3 py-2 text-white"
+                                    >
+                                        <option>YieldProof Demo Vault</option>
+                                    </select>
                                 </div>
+
+                                <Input
+                                    label="Amount (MNT)"
+                                    placeholder="0.00"
+                                    value={depositAmount}
+                                    onChange={(e) => setDepositAmount(e.target.value)}
+                                    className="bg-gradient-to-br from-slate-800/60 to-slate-900/40 border-slate-600/50 text-white"
+                                />
+
+                                <Button
+                                    onClick={handleDeposit}
+                                    disabled={isWritePending || isConfirming || !isConnected}
+                                    className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white"
+                                >
+                                    {isWritePending || isConfirming ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            {isWritePending ? 'Confirming...' : 'Processing...'}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Plus className="mr-2 h-4 w-4" />
+                                            Add Capital
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        </Card>
+                    </AnimatedSection>
+
+                    {/* Withdraw */}
+                    <AnimatedSection delay={0.3}>
+                        <Card id="withdraw-section" className="p-6">
+                            <CardHeader className="p-0 mb-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-gradient-to-r from-slate-600 to-slate-700 rounded-lg flex items-center justify-center shadow-lg">
+                                        <Minus className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div>
+                                        <CardTitle className="text-white">Withdraw</CardTitle>
+                                        <CardDescription className="text-slate-400">
+                                            Withdraw available funds from vault
+                                        </CardDescription>
+                                    </div>
+                                </div>
+                            </CardHeader>
+
+                            <div className="space-y-4">
+                                <div className="bg-slate-800/30 rounded-lg p-3 border border-slate-700/50">
+                                    <div className="text-sm text-slate-400 mb-1">Available Balance</div>
+                                    <div className="text-lg font-semibold text-white">
+                                        {userBalanceEth.toFixed(4)} MNT
+                                    </div>
+                                </div>
+
+                                <Input
+                                    label="Withdrawal Amount (MNT)"
+                                    placeholder="0.00"
+                                    value={withdrawAmount}
+                                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                                    className="bg-gradient-to-br from-slate-800/60 to-slate-900/40 border-slate-600/50 text-white"
+                                />
+
+                                <Button
+                                    onClick={handleWithdraw}
+                                    disabled={isWritePending || isConfirming || !isConnected || userBalanceEth === 0}
+                                    className="w-full bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-500 hover:to-slate-600 text-white"
+                                >
+                                    {isWritePending || isConfirming ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            {isWritePending ? 'Confirming...' : 'Processing...'}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Minus className="mr-2 h-4 w-4" />
+                                            Withdraw
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        </Card>
+                    </AnimatedSection>
+                </div>
+
+                {/* Active Disclosures */}
+                <AnimatedSection delay={0.4} className="mb-8">
+                    <Card className="p-6">
+                        <CardHeader className="p-0 mb-6">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
+                                        <Activity className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div>
+                                        <CardTitle className="text-white">Active Disclosures</CardTitle>
+                                        <CardDescription className="text-slate-400">
+                                            Real-time verification status of institutional yields.
+                                        </CardDescription>
+                                    </div>
+                                </div>
+                                <Badge variant="default" className="px-3 py-1">
+                                    {filteredAndSortedDisclosures.length} of {activeDisclosures.length}
+                                </Badge>
                             </div>
                         </CardHeader>
 
-                        <div className="space-y-4">
-                            <div className="bg-slate-800/30 rounded-lg p-3 border border-slate-700/50">
-                                <div className="text-sm text-slate-400 mb-1">Available Balance</div>
-                                <div className="text-lg font-semibold text-white">
-                                    {userBalanceEth.toFixed(4)} MNT
+                        {/* Filter and Sort Controls */}
+                        <div className="mb-6 space-y-4">
+                            <div className="flex flex-col sm:flex-row gap-4">
+                                {/* Search */}
+                                <div className="flex-1">
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                        <Input
+                                            placeholder="Search by asset ID or period..."
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            className="pl-10 bg-slate-800/50 border-slate-600/50 text-white h-10"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Status Filter */}
+                                <div className="min-w-[140px]">
+                                    <select
+                                        value={statusFilter}
+                                        onChange={(e) => setStatusFilter(e.target.value as any)}
+                                        className="w-full h-10 bg-slate-800/80 border border-slate-600/50 rounded-lg px-3 py-2 text-white text-sm backdrop-blur-sm hover:border-slate-500/50 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 appearance-none cursor-pointer"
+                                        style={{
+                                            backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
+                                            backgroundPosition: 'right 0.5rem center',
+                                            backgroundRepeat: 'no-repeat',
+                                            backgroundSize: '1.5em 1.5em',
+                                            paddingRight: '2.5rem'
+                                        }}
+                                    >
+                                        <option value="all" className="bg-slate-800 text-white">All Status</option>
+                                        <option value="submitted" className="bg-slate-800 text-white">Submitted</option>
+                                        <option value="attesting" className="bg-slate-800 text-white">Attesting</option>
+                                        <option value="verified" className="bg-slate-800 text-white">Verified</option>
+                                    </select>
+                                </div>
+
+                                {/* Sort Controls */}
+                                <div className="flex gap-2">
+                                    <select
+                                        value={sortBy}
+                                        onChange={(e) => setSortBy(e.target.value as any)}
+                                        className="h-10 bg-slate-800/80 border border-slate-600/50 rounded-lg px-3 py-2 text-white text-sm min-w-[140px] backdrop-blur-sm hover:border-slate-500/50 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 appearance-none cursor-pointer"
+                                        style={{
+                                            backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
+                                            backgroundPosition: 'right 0.5rem center',
+                                            backgroundRepeat: 'no-repeat',
+                                            backgroundSize: '1.5em 1.5em',
+                                            paddingRight: '2.5rem'
+                                        }}
+                                    >
+                                        <option value="yieldAmount" className="bg-slate-800 text-white">Yield Amount</option>
+                                        <option value="yourShare" className="bg-slate-800 text-white">Your Share</option>
+                                        <option value="timestamp" className="bg-slate-800 text-white">Timestamp</option>
+                                        <option value="period" className="bg-slate-800 text-white">Period</option>
+                                        <option value="status" className="bg-slate-800 text-white">Status</option>
+                                    </select>
+
+                                    {/* Sort direction toggle */}
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                                        className="h-10 px-3 border-slate-600/50 text-slate-300 hover:text-white hover:border-slate-500/50 transition-all duration-200"
+                                    >
+                                        {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+                                    </Button>
                                 </div>
                             </div>
 
-                            <Input
-                                label="Withdrawal Amount (MNT)"
-                                placeholder="0.00"
-                                value={withdrawAmount}
-                                onChange={(e) => setWithdrawAmount(e.target.value)}
-                                className="bg-gradient-to-br from-slate-800/60 to-slate-900/40 border-slate-600/50 text-white"
-                            />
-
-                            <Button
-                                onClick={handleWithdraw}
-                                disabled={isWritePending || isConfirming || !isConnected || userBalanceEth === 0}
-                                className="w-full bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-500 hover:to-slate-600 text-white"
-                            >
-                                {isWritePending || isConfirming ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        {isWritePending ? 'Confirming...' : 'Processing...'}
-                                    </>
-                                ) : (
-                                    <>
-                                        <Minus className="mr-2 h-4 w-4" />
-                                        Withdraw
-                                    </>
-                                )}
-                            </Button>
-                        </div>
-                    </Card>
-                </AnimatedSection>
-            </div>
-
-            {/* Active Disclosures */}
-            <AnimatedSection delay={0.4} className="mb-8">
-                <Card className="p-6">
-                    <CardHeader className="p-0 mb-6">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
-                                <Activity className="w-5 h-5 text-white" />
-                            </div>
-                            <div>
-                                <CardTitle className="text-white">Active Disclosures</CardTitle>
-                                <CardDescription className="text-slate-400">
-                                    Real-time verification status of institutional yields.
-                                </CardDescription>
-                            </div>
-                        </div>
-                    </CardHeader>
-
-                    <div className="space-y-4">
-                        {activeDisclosures.map((disclosure) => (
-                            <div key={disclosure.id} className="bg-slate-800/30 rounded-lg p-4 border border-slate-700/50">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="flex items-center gap-3">
-                                        <Badge variant={getStatusColor(disclosure.status) as any}>
-                                            {getStatusLabel(disclosure.status)}
+                            {/* Active Filters Display */}
+                            {(searchTerm || statusFilter !== 'all' || sortBy !== 'timestamp') && (
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-sm text-slate-400">Active:</span>
+                                    {searchTerm && (
+                                        <Badge variant="secondary" className="text-xs">
+                                            Search: "{searchTerm}"
+                                            <button
+                                                onClick={() => setSearchTerm('')}
+                                                className="ml-1 hover:text-white"
+                                            >
+                                                ×
+                                            </button>
                                         </Badge>
-                                        <span className="text-white font-medium">{disclosure.assetId}</span>
+                                    )}
+                                    {statusFilter !== 'all' && (
+                                        <Badge variant="secondary" className="text-xs">
+                                            Status: {statusFilter}
+                                            <button
+                                                onClick={() => setStatusFilter('all')}
+                                                className="ml-1 hover:text-white"
+                                            >
+                                                ×
+                                            </button>
+                                        </Badge>
+                                    )}
+                                    {sortBy !== 'timestamp' && (
+                                        <Badge variant="info" className="text-xs">
+                                            Sort: {sortBy === 'yourShare' ? 'Your Share' :
+                                                sortBy === 'period' ? 'Period' :
+                                                    sortBy === 'status' ? 'Status' :
+                                                        sortBy === 'yieldAmount' ? 'Yield Amount' : sortBy}
+                                            <span className="ml-1">({sortOrder === 'asc' ? '↑' : '↓'})</span>
+                                        </Badge>
+                                    )}
+                                    {(searchTerm || statusFilter !== 'all' || sortBy !== 'timestamp') && (
+                                        <button
+                                            onClick={() => {
+                                                setSearchTerm('');
+                                                setStatusFilter('all');
+                                                setSortBy('timestamp');
+                                                setSortOrder('asc');
+                                            }}
+                                            className="text-xs text-slate-400 hover:text-white underline"
+                                        >
+                                            Reset all
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="space-y-4">
+                            {filteredAndSortedDisclosures.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <div className="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <Activity className="w-8 h-8 text-slate-500" />
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                        <div className="text-right">
-                                            <div className="text-sm text-slate-400">Your Share to 99%</div>
-                                            <div className="text-lg font-semibold text-white">
-                                                {disclosure.yourShare.toFixed(4)} MNT
+                                    <h3 className="text-lg font-medium text-slate-300 mb-2">
+                                        {activeDisclosures.length === 0 ? 'No Active Disclosures' : 'No Matching Disclosures'}
+                                    </h3>
+                                    <p className="text-slate-500 text-sm max-w-sm mx-auto">
+                                        {activeDisclosures.length === 0
+                                            ? 'There are currently no active yield disclosures to display.'
+                                            : 'Try adjusting your search or filter criteria.'
+                                        }
+                                    </p>
+                                    {(searchTerm || statusFilter !== 'all') && (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                setSearchTerm('');
+                                                setStatusFilter('all');
+                                            }}
+                                            className="mt-4"
+                                        >
+                                            Clear Filters
+                                        </Button>
+                                    )}
+                                </div>
+                            ) : (
+                                filteredAndSortedDisclosures.map((disclosure) => (
+                                    <div key={disclosure.id} className="bg-slate-800/30 rounded-lg p-4 border border-slate-700/50">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center gap-3">
+                                                <Badge variant={getStatusColor(disclosure.status) as any}>
+                                                    {getStatusLabel(disclosure.status)}
+                                                </Badge>
+                                                <span className="text-white font-medium">{disclosure.assetId}</span>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <div className="text-right">
+                                                    <div className="text-sm text-slate-400">Your Share to 99%</div>
+                                                    <div className="text-lg font-semibold text-white">
+                                                        {disclosure.yourShare.toFixed(4)} MNT
+                                                    </div>
+                                                </div>
+                                                {disclosure.status === 'verified' && (
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={() => handleClaimYield(disclosure.id)}
+                                                        disabled={isWritePending || isConfirming || !isConnected}
+                                                        className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white"
+                                                    >
+                                                        {isWritePending || isConfirming ? (
+                                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                                        ) : (
+                                                            <>
+                                                                <Coins className="w-4 h-4 mr-1" />
+                                                                Claim
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                )}
                                             </div>
                                         </div>
-                                        {disclosure.status === 'verified' && (
-                                            <Button
-                                                size="sm"
-                                                onClick={() => handleClaimYield(disclosure.id)}
-                                                disabled={isWritePending || isConfirming || !isConnected}
-                                                className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white"
-                                            >
-                                                {isWritePending || isConfirming ? (
-                                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                                ) : (
-                                                    <>
-                                                        <Coins className="w-4 h-4 mr-1" />
-                                                        Claim
-                                                    </>
-                                                )}
-                                            </Button>
+
+                                        <div className="grid grid-cols-3 gap-4 mb-3">
+                                            <div>
+                                                <div className="text-xs text-slate-500">Period</div>
+                                                <div className="text-sm text-slate-300">{disclosure.period}</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-xs text-slate-500">Yield</div>
+                                                <div className="text-sm text-slate-300">{disclosure.yieldAmount} MNT</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-xs text-slate-500">Status</div>
+                                                <div className="text-sm text-slate-300">
+                                                    {disclosure.status === 'attesting' ? `${disclosure.attestationProgress}% Verified` : 'Verified'}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {disclosure.status === 'attesting' && (
+                                            <div className="mb-3">
+                                                <div className="flex justify-between text-xs text-slate-400 mb-1">
+                                                    <span>Verification Progress</span>
+                                                    <span>{disclosure.attestationProgress}%</span>
+                                                </div>
+                                                <div className="w-full bg-slate-700 rounded-full h-2">
+                                                    <div
+                                                        className="bg-gradient-to-r from-amber-500 to-amber-600 h-2 rounded-full transition-all duration-500"
+                                                        style={{ width: `${disclosure.attestationProgress}%` }}
+                                                    />
+                                                </div>
+                                            </div>
                                         )}
-                                    </div>
-                                </div>
 
-                                <div className="grid grid-cols-3 gap-4 mb-3">
-                                    <div>
-                                        <div className="text-xs text-slate-500">Period</div>
-                                        <div className="text-sm text-slate-300">{disclosure.period}</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-xs text-slate-500">Yield</div>
-                                        <div className="text-sm text-slate-300">{disclosure.yieldAmount} MNT</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-xs text-slate-500">Status</div>
-                                        <div className="text-sm text-slate-300">
-                                            {disclosure.status === 'attesting' ? `${disclosure.attestationProgress}% Verified` : 'Verified'}
+                                        <div className="flex items-center justify-between text-xs text-slate-500">
+                                            <span>Total Stake: {disclosure.totalStake} MNT</span>
+                                            <div className="flex items-center gap-1">
+                                                <span className="font-mono">{disclosure.proofHash}</span>
+                                                <ExternalLink className="w-3 h-3" />
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-
-                                {disclosure.status === 'attesting' && (
-                                    <div className="mb-3">
-                                        <div className="flex justify-between text-xs text-slate-400 mb-1">
-                                            <span>Verification Progress</span>
-                                            <span>{disclosure.attestationProgress}%</span>
-                                        </div>
-                                        <div className="w-full bg-slate-700 rounded-full h-2">
-                                            <div 
-                                                className="bg-gradient-to-r from-amber-500 to-amber-600 h-2 rounded-full transition-all duration-500"
-                                                style={{ width: `${disclosure.attestationProgress}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="flex items-center justify-between text-xs text-slate-500">
-                                    <span>Total Stake: {disclosure.totalStake} MNT</span>
-                                    <div className="flex items-center gap-1">
-                                        <span className="font-mono">{disclosure.proofHash}</span>
-                                        <ExternalLink className="w-3 h-3" />
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </Card>
-            </AnimatedSection>
-
-            {/* Expandable Sections */}
-            <div className="space-y-4">
-                <AnimatedSection delay={0.5}>
-                    <Card className="p-4 cursor-pointer hover:bg-slate-800/40 transition-colors">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <Clock className="w-5 h-5 text-slate-400" />
-                                <span className="text-white font-medium">Historical Payouts</span>
-                            </div>
-                            <ArrowRight className="w-5 h-5 text-slate-400" />
+                                ))
+                            )}
                         </div>
                     </Card>
                 </AnimatedSection>
 
-                <AnimatedSection delay={0.6}>
-                    <Card className="p-4 cursor-pointer hover:bg-slate-800/40 transition-colors">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <Target className="w-5 h-5 text-slate-400" />
-                                <span className="text-white font-medium">Vault Mechanics & Status</span>
+                {/* Expandable Sections */}
+                <div className="space-y-4">
+                    <AnimatedSection delay={0.5}>
+                        <Card className="p-4 cursor-pointer hover:bg-slate-800/40 transition-colors">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <Clock className="w-5 h-5 text-slate-400" />
+                                    <span className="text-white font-medium">Historical Payouts</span>
+                                </div>
+                                <ArrowRight className="w-5 h-5 text-slate-400" />
                             </div>
-                            <ArrowRight className="w-5 h-5 text-slate-400" />
-                        </div>
-                    </Card>
-                </AnimatedSection>
+                        </Card>
+                    </AnimatedSection>
 
-                <AnimatedSection delay={0.7}>
-                    <Card className="p-4 cursor-pointer hover:bg-slate-800/40 transition-colors opacity-50">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <Landmark className="w-5 h-5 text-slate-400" />
-                                <span className="text-white font-medium">Institutional Pipeline (Preview Only)</span>
+                    <AnimatedSection delay={0.6}>
+                        <Card className="p-4 cursor-pointer hover:bg-slate-800/40 transition-colors">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <Target className="w-5 h-5 text-slate-400" />
+                                    <span className="text-white font-medium">Vault Mechanics & Status</span>
+                                </div>
+                                <ArrowRight className="w-5 h-5 text-slate-400" />
                             </div>
-                            <ArrowRight className="w-5 h-5 text-slate-400" />
-                        </div>
-                    </Card>
-                </AnimatedSection>
-            </div>
+                        </Card>
+                    </AnimatedSection>
+
+                    <AnimatedSection delay={0.7}>
+                        <Card className="p-4 cursor-pointer hover:bg-slate-800/40 transition-colors opacity-50">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <Landmark className="w-5 h-5 text-slate-400" />
+                                    <span className="text-white font-medium">Institutional Pipeline (Preview Only)</span>
+                                </div>
+                                <ArrowRight className="w-5 h-5 text-slate-400" />
+                            </div>
+                        </Card>
+                    </AnimatedSection>
+                </div>
             </div>
         </div>
     );

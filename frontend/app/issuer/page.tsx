@@ -128,9 +128,31 @@ export default function IssuerPage() {
         query: { enabled: claimIndexes.length > 0 }
     });
 
+    // Read attestor lists for each claim
+    const { data: attestorListsData, refetch: refetchAttestorLists } = useReadContracts({
+        contracts: claimIndexes.map(id => ({
+            address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
+            abi: CONTRACTS.AttestorRegistry.abi as Abi,
+            functionName: 'getAttestors',
+            args: [BigInt(id)],
+        })),
+        query: { enabled: claimIndexes.length > 0, refetchInterval: 5000 }
+    });
+
+    // Read stake amounts per claim
+    const { data: claimStakesData, refetch: refetchClaimStakes } = useReadContracts({
+        contracts: claimIndexes.map(id => ({
+            address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
+            abi: CONTRACTS.AttestorRegistry.abi as Abi,
+            functionName: 'totalStakePerClaim',
+            args: [BigInt(id)],
+        })),
+        query: { enabled: claimIndexes.length > 0, refetchInterval: 5000 }
+    });
+
     // Process claims data into disclosures (filter by user's address)
     useEffect(() => {
-        if (claimsData && address) {
+        if (claimsData && attestorListsData && claimStakesData && address) {
             console.log('Processing claims data:', { claimsData, address, totalClaims });
 
             const userDisclosures = claimsData
@@ -170,6 +192,11 @@ export default function IssuerPage() {
                         ether: yieldAmountEther
                     });
 
+                    // Get real attestor count and stake data
+                    const attestorList = attestorListsData[index]?.result as string[] || [];
+                    const attestorCount = attestorList.length;
+                    const stakeAmount = claimStakesData[index]?.result ? formatEther(claimStakesData[index].result as bigint) : '0';
+
                     const disclosure = {
                         id: `disclosure-${claim[0]}`,
                         vaultName: selectedVault,
@@ -178,10 +205,10 @@ export default function IssuerPage() {
                         yieldAmount: yieldAmountEther,
                         documentHash: claim[4] || '',
                         status: status as any,
-                        currentStake: '0.0', // Would need additional contract call
-                        attestorCount: 0, // Would need additional contract call
+                        currentStake: parseFloat(stakeAmount).toFixed(1),
+                        attestorCount: attestorCount,
                         minAttestors: 3,
-                        proofHash: `0x${Math.random().toString(16).substr(2, 40)}`,
+                        proofHash: `0x${claim[4]?.slice(2, 42) || 'generated_hash_placeholder'}`,
                         submittedAt: getCurrentDate() // Would need to track this separately
                     };
 
@@ -196,15 +223,17 @@ export default function IssuerPage() {
             console.log('No claims data or address:', { claimsData: !!claimsData, address });
             setDisclosures([]);
         }
-    }, [claimsData, address, selectedVault]);
+    }, [claimsData, attestorListsData, claimStakesData, address, selectedVault]);
 
     // Refetch data when transaction is confirmed
     useEffect(() => {
         if (isConfirmed) {
             refetchTotalClaims();
             refetchClaims();
+            refetchAttestorLists();
+            refetchClaimStakes();
         }
-    }, [isConfirmed, refetchTotalClaims, refetchClaims]);
+    }, [isConfirmed, refetchTotalClaims, refetchClaims, refetchAttestorLists, refetchClaimStakes]);
 
     // Calculate dynamic metrics based on actual disclosures
     const vaultMetrics: VaultMetrics = {
@@ -300,7 +329,7 @@ export default function IssuerPage() {
                 // For development, fall back to a mock CID if Pinata fails
                 if (response.error?.includes("Pinata")) {
                     console.log("Using mock upload for development");
-                    const mockCid = `mock_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    const mockCid = `mock_${Date.now()}_dev_upload`;
                     setUploadedCid(mockCid);
                     setFormData(prev => ({ ...prev, documentHash: `ipfs://${mockCid}` }));
                 } else {
@@ -311,7 +340,7 @@ export default function IssuerPage() {
             console.error("Upload error:", e);
             // Fallback to mock upload for development
             console.log("Using mock upload due to error");
-            const mockCid = `mock_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            const mockCid = `mock_${Date.now()}_fallback`;
             setUploadedCid(mockCid);
             setFormData(prev => ({ ...prev, documentHash: `ipfs://${mockCid}` }));
         } finally {
@@ -714,6 +743,8 @@ export default function IssuerPage() {
                                         onClick={() => {
                                             refetchTotalClaims();
                                             refetchClaims();
+                                            refetchAttestorLists();
+                                            refetchClaimStakes();
                                         }}
                                         className="text-slate-400 hover:text-white"
                                     >
@@ -935,7 +966,7 @@ export default function IssuerPage() {
                                                         <div className="flex items-center justify-between mb-2">
                                                             <div className="flex items-center gap-2">
                                                                 <div className={`w-2 h-2 rounded-full ${funding.status === 'confirmed' ? 'bg-slate-400' :
-                                                                        funding.status === 'pending' ? 'bg-slate-500' : 'bg-slate-400'
+                                                                    funding.status === 'pending' ? 'bg-slate-500' : 'bg-slate-400'
                                                                     }`} />
                                                                 <span className="text-sm font-medium text-white">
                                                                     {funding.amount.toLocaleString()} MNT

@@ -1,17 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { AnimatedSection, StaggeredContainer } from '@/components/ui/AnimatedSection';
-import { 
-    ShieldCheck, 
-    ExternalLink, 
-    Loader2, 
-    Flag, 
-    UserCheck, 
+import {
+    ShieldCheck,
+    ExternalLink,
+    Loader2,
+    Flag,
+    UserCheck,
     TrendingUp,
     Award,
     Eye,
@@ -64,10 +64,8 @@ export default function AttestorPage() {
     const [stakeAmount, setStakeAmount] = useState('1.0');
     const [selectedTab, setSelectedTab] = useState<'pending' | 'attested' | 'history'>('pending');
     const [searchTerm, setSearchTerm] = useState('');
-    const [gasPrice, setGasPrice] = useState<string>('');
-    const [showAdvanced, setShowAdvanced] = useState(false);
 
-    // State for different claim categories
+    // State for different claim categories - initialize with proper defaults
     const [pendingClaims, setPendingClaims] = useState<Claim[]>([]);
     const [attestedClaims, setAttestedClaims] = useState<Claim[]>([]);
     const [historyClaims, setHistoryClaims] = useState<Claim[]>([]);
@@ -148,28 +146,32 @@ export default function AttestorPage() {
         query: { refetchInterval: 5000 }
     });
 
-    // Read attestor counts
-    const { data: attestorCountsData } = useReadContracts({
+    // Read attestor counts using getAttestors function
+    const { data: attestorListsData, refetch: refetchAttestorLists } = useReadContracts({
         contracts: claimIndexes.map(id => ({
             address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
             abi: CONTRACTS.AttestorRegistry.abi as Abi,
-            functionName: 'attestorCountPerClaim',
+            functionName: 'getAttestors',
             args: [id],
         })),
         query: { refetchInterval: 5000 }
     });
 
-    const isLoading = !claimsData || !hasAttestedData || !claimStakesData || !attestorCountsData;
+    const isLoading = !isConnected || (totalClaims > 0 && (!claimsData || !hasAttestedData || !claimStakesData || !attestorListsData));
+
     // Process claims data
     useEffect(() => {
-        if (claimsData && hasAttestedData && claimStakesData && attestorCountsData && address) {
+        if (claimsData && hasAttestedData && claimStakesData && attestorListsData && address) {
             const processedClaims = claimsData.map((result, i) => {
                 const claim = result.result as any;
                 if (!claim) return null;
 
                 const hasAttested = !!(hasAttestedData[i]?.result);
                 const stakeAmount = claimStakesData[i]?.result ? formatEther(claimStakesData[i].result as bigint) : '0';
-                const attestorCount = attestorCountsData[i]?.result ? Number(attestorCountsData[i].result) : 0;
+
+                // Get attestor count from the attestor list
+                const attestorList = attestorListsData[i]?.result as string[] || [];
+                const attestorCount = attestorList.length;
 
                 const statusEnum = Number(claim[6]);
                 const statusStr = ['submitted', 'attesting', 'verified', 'flagged', 'rejected'][statusEnum];
@@ -190,18 +192,31 @@ export default function AttestorPage() {
                 };
             }).filter(Boolean) as Claim[];
 
-            // Filter claims by category
-            const pending = processedClaims.filter(c => 
-                !c.alreadyAttested && (c.status === 'submitted' || c.status === 'attesting')
-            );
-            
-            const attested = processedClaims.filter(c => 
-                c.alreadyAttested && (c.status === 'submitted' || c.status === 'attesting')
-            );
-            
-            const history = processedClaims.filter(c => 
-                c.alreadyAttested && (c.status === 'verified' || c.status === 'flagged' || c.status === 'rejected')
-            );
+            // Filter claims by category with improved logic
+            const pending = processedClaims.filter(c => {
+                // Claims that haven't been attested by this user and are still open for attestation
+                return !c.alreadyAttested && (c.status === 'submitted' || c.status === 'attesting');
+            });
+
+            const attested = processedClaims.filter(c => {
+                // Claims that have been attested by this user but haven't reached required attestor threshold yet
+                // Only show claims still in progress (not yet verified/flagged/rejected)
+                return c.alreadyAttested && (
+                    c.status === 'submitted' ||
+                    c.status === 'attesting'
+                ) && c.attestorCount! < c.requiredAttestors!;
+            });
+
+            const history = processedClaims.filter(c => {
+                // IMPORTANT: Only show claims that THIS USER has personally attested to (alreadyAttested = true)
+                // AND that have been completed: verified, flagged, rejected, or reached attestor threshold
+                return c.alreadyAttested && (
+                    c.status === 'verified' ||
+                    c.status === 'flagged' ||
+                    c.status === 'rejected' ||
+                    c.attestorCount! >= c.requiredAttestors!
+                );
+            });
 
             setPendingClaims(pending.reverse());
             setAttestedClaims(attested.reverse());
@@ -209,7 +224,7 @@ export default function AttestorPage() {
 
             // Calculate stats
             const totalAttestations = attested.length + history.length;
-            const successfulAttestations = history.filter(c => c.status === 'verified').length;
+            const successfulAttestations = history.filter(c => c.status === 'verified').length + attested.filter(c => c.status === 'verified').length;
             const accuracyRate = totalAttestations > 0 ? (successfulAttestations / totalAttestations) * 100 : 0;
 
             setAttestorStats({
@@ -221,7 +236,8 @@ export default function AttestorPage() {
                 accuracyRate
             });
         }
-    }, [claimsData, hasAttestedData, claimStakesData, attestorCountsData, address, currentStake, minAttestors]);
+    }, [claimsData, hasAttestedData, claimStakesData, attestorListsData, address, currentStake, minAttestors]);
+
     // Refetch on transaction success
     useEffect(() => {
         if (isConfirmed) {
@@ -230,32 +246,30 @@ export default function AttestorPage() {
             refetchHasAttested();
             refetchTotalClaims();
             refetchClaimStakes();
+            refetchAttestorLists();
         }
-    }, [isConfirmed, refetchAttestor, refetchClaims, refetchHasAttested, refetchTotalClaims, refetchClaimStakes]);
+    }, [isConfirmed, refetchAttestor, refetchClaims, refetchHasAttested, refetchTotalClaims, refetchClaimStakes, refetchAttestorLists]);
 
     // Handlers
     const handleStake = async () => {
         if (!isConnected || !stakeAmount) return;
-        
+
         try {
             const value = parseEther(stakeAmount);
-            const gasOptions = gasPrice ? { gasPrice: BigInt(Math.floor(parseFloat(gasPrice) * 1e9)) } : {};
-            
+
             if (!isRegistered) {
                 writeContract({
                     address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
                     abi: CONTRACTS.AttestorRegistry.abi as Abi,
                     functionName: 'register',
-                    value,
-                    ...gasOptions
+                    value
                 });
             } else {
                 writeContract({
                     address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
                     abi: CONTRACTS.AttestorRegistry.abi as Abi,
                     functionName: 'stakeETH',
-                    value,
-                    ...gasOptions
+                    value
                 });
             }
         } catch (error) {
@@ -265,16 +279,13 @@ export default function AttestorPage() {
 
     const handleAttest = async (claimId: number) => {
         if (!isConnected) return;
-        
+
         try {
-            const gasOptions = gasPrice ? { gasPrice: BigInt(Math.floor(parseFloat(gasPrice) * 1e9)) } : {};
-            
             writeContract({
                 address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
                 abi: CONTRACTS.AttestorRegistry.abi as Abi,
                 functionName: 'attestToClaim',
-                args: [BigInt(claimId)],
-                ...gasOptions
+                args: [BigInt(claimId)]
             });
         } catch (error) {
             console.error("Attestation failed:", error);
@@ -283,19 +294,16 @@ export default function AttestorPage() {
 
     const handleFlag = async (claimId: number) => {
         if (!isConnected) return;
-        
+
         const reason = window.prompt("Why are you flagging this claim?");
         if (!reason) return;
 
         try {
-            const gasOptions = gasPrice ? { gasPrice: BigInt(Math.floor(parseFloat(gasPrice) * 1e9)) } : {};
-            
             writeContract({
                 address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
                 abi: CONTRACTS.AttestorRegistry.abi as Abi,
                 functionName: 'flagClaim',
-                args: [BigInt(claimId), reason],
-                ...gasOptions
+                args: [BigInt(claimId), reason]
             });
         } catch (error) {
             console.error("Flagging failed:", error);
@@ -323,20 +331,31 @@ export default function AttestorPage() {
         }
     };
 
-    const filteredClaims = () => {
+    // Memoized filtered claims to ensure proper updates
+    const filteredClaims = useMemo(() => {
         let claims: Claim[] = [];
         switch (selectedTab) {
-            case 'pending': claims = pendingClaims; break;
-            case 'attested': claims = attestedClaims; break;
-            case 'history': claims = historyClaims; break;
+            case 'pending':
+                claims = pendingClaims || [];
+                break;
+            case 'attested':
+                claims = attestedClaims || [];
+                break;
+            case 'history':
+                claims = historyClaims || [];
+                break;
+            default:
+                claims = [];
         }
-        
+
         if (!searchTerm) return claims;
-        return claims.filter(claim => 
-            claim.assetId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            claim.period.toLowerCase().includes(searchTerm.toLowerCase())
+
+        return claims.filter(claim =>
+            claim && claim.assetId && claim.period &&
+            (claim.assetId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                claim.period.toLowerCase().includes(searchTerm.toLowerCase()))
         );
-    };
+    }, [selectedTab, pendingClaims, attestedClaims, historyClaims, searchTerm]);
 
     const isProcessing = isWritePending || isConfirming;
 
@@ -438,48 +457,6 @@ export default function AttestorPage() {
                                             min="0"
                                         />
 
-                                        {/* Advanced Gas Controls */}
-                                        <div className="space-y-3">
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowAdvanced(!showAdvanced)}
-                                                className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
-                                            >
-                                                <span>Advanced Gas Settings</span>
-                                                <svg 
-                                                    className={`w-4 h-4 transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
-                                                    fill="none" 
-                                                    stroke="currentColor" 
-                                                    viewBox="0 0 24 24"
-                                                >
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                                </svg>
-                                            </button>
-
-                                            {showAdvanced && (
-                                                <div className="space-y-3 p-3 bg-slate-800/30 rounded-lg border border-slate-700/50">
-                                                    <Input
-                                                        label="Gas Price (Gwei)"
-                                                        type="number"
-                                                        value={gasPrice}
-                                                        onChange={(e) => setGasPrice(e.target.value)}
-                                                        placeholder="Auto"
-                                                        helperText="Leave empty for automatic gas price. Lower values = cheaper but slower"
-                                                        step="0.1"
-                                                        min="0"
-                                                    />
-                                                    <div className="text-xs text-slate-500 space-y-1">
-                                                        <p>💡 <strong>Gas Tips:</strong></p>
-                                                        <p>• 1-5 Gwei: Very slow, cheapest</p>
-                                                        <p>• 5-15 Gwei: Normal speed</p>
-                                                        <p>• 15+ Gwei: Fast, more expensive</p>
-                                                        <p>• Empty: Auto estimation (recommended)</p>
-                                                        <p className="text-emerald-400">✅ Using automatic gas limits for reliability</p>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                        
                                         <Button
                                             onClick={handleStake}
                                             disabled={!isConnected || isProcessing || !stakeAmount}
@@ -507,14 +484,14 @@ export default function AttestorPage() {
                                                     <p className="text-amber-400/80 mt-1">Stake MNT to become an attestor and start earning rewards.</p>
                                                 </div>
                                             </div>
-                                            
-                                            {/* Gas Fee Information */}
+
+                                            {/* Smart Contract Information */}
                                             <div className="flex items-start gap-2 p-3 bg-emerald-900/20 border border-emerald-500/30 rounded-lg">
                                                 <DollarSign className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
                                                 <div className="text-xs text-emerald-300">
                                                     <p className="font-medium">Smart Contract Updated!</p>
                                                     <p className="text-emerald-400/80 mt-1">
-                                                        Added missing functions (flagClaim, attestor tracking). Using automatic gas estimation for better reliability.
+                                                        Enhanced with improved attestor tracking and automatic gas optimization for better reliability.
                                                     </p>
                                                 </div>
                                             </div>
@@ -553,16 +530,6 @@ export default function AttestorPage() {
                                             <span className="text-emerald-400 font-mono">{attestorStats.rewardsEarned.toFixed(2)} MNT</span>
                                         </div>
                                     </div>
-                                    
-                                    {/* Gas Optimization Tips */}
-                                    <div className="pt-4 border-t border-slate-700">
-                                        <div className="text-xs text-slate-500 space-y-1">
-                                            <p className="font-medium text-slate-400">💡 Gas Optimization:</p>
-                                            <p>• Use 1-5 Gwei for cheaper transactions</p>
-                                            <p>• Batch multiple attestations when possible</p>
-                                            <p>• Avoid peak network hours</p>
-                                        </div>
-                                    </div>
                                 </CardContent>
                             </Card>
                         </AnimatedSection>
@@ -581,11 +548,10 @@ export default function AttestorPage() {
                                         <button
                                             key={key}
                                             onClick={() => setSelectedTab(key as any)}
-                                            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                                                selectedTab === key
-                                                    ? 'bg-indigo-600 text-white shadow-lg'
-                                                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-                                            }`}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${selectedTab === key
+                                                ? 'bg-indigo-600 text-white shadow-lg'
+                                                : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                                                }`}
                                         >
                                             <Icon className="w-4 h-4" />
                                             <span className="hidden sm:inline">{label}</span>
@@ -610,6 +576,7 @@ export default function AttestorPage() {
                                             refetchClaims();
                                             refetchHasAttested();
                                             refetchClaimStakes();
+                                            refetchAttestorLists();
                                         }}
                                         className="text-slate-400 hover:text-white"
                                     >
@@ -634,7 +601,7 @@ export default function AttestorPage() {
                                         </CardContent>
                                     </Card>
                                 ) : isLoading ? (
-                                    <StaggeredContainer className="space-y-4" staggerDelay={0.1}>
+                                    <StaggeredContainer key="loading" className="space-y-4" staggerDelay={0.1}>
                                         {Array.from({ length: 3 }).map((_, i) => (
                                             <Card key={i} className="backdrop-blur-xl animate-pulse">
                                                 <CardContent className="p-6">
@@ -650,27 +617,27 @@ export default function AttestorPage() {
                                             </Card>
                                         ))}
                                     </StaggeredContainer>
-                                ) : filteredClaims().length === 0 ? (
+                                ) : filteredClaims.length === 0 ? (
                                     <Card className="backdrop-blur-xl">
                                         <CardContent className="text-center py-12">
                                             <div className="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
                                                 <FileText className="w-8 h-8 text-slate-500" />
                                             </div>
                                             <h3 className="text-lg font-medium text-slate-300 mb-2">
-                                                {selectedTab === 'pending' ? 'No Claims to Verify' : 
-                                                 selectedTab === 'attested' ? 'No Pending Attestations' : 
-                                                 'No Attestation History'}
+                                                {selectedTab === 'pending' ? 'No Claims to Verify' :
+                                                    selectedTab === 'attested' ? 'No Pending Attestations' :
+                                                        'No Attestation History'}
                                             </h3>
                                             <p className="text-slate-500 text-sm max-w-sm mx-auto">
                                                 {selectedTab === 'pending' ? 'All claims have been verified or no new claims are available.' :
-                                                 selectedTab === 'attested' ? 'You have no pending attestations waiting for finalization.' :
-                                                 'You haven\'t completed any attestations yet.'}
+                                                    selectedTab === 'attested' ? 'You have no pending attestations waiting for finalization.' :
+                                                        'You haven\'t completed any attestations yet.'}
                                             </p>
                                         </CardContent>
                                     </Card>
                                 ) : (
-                                    <StaggeredContainer className="space-y-4" staggerDelay={0.1}>
-                                        {filteredClaims().map((claim) => (
+                                    <StaggeredContainer key={selectedTab} className="space-y-4" staggerDelay={0.1}>
+                                        {filteredClaims.map((claim) => (
                                             <Card key={claim.id} className="backdrop-blur-xl hover:bg-slate-800/30 transition-all duration-300">
                                                 <CardContent className="p-6">
                                                     <div className="flex items-start justify-between">
@@ -725,10 +692,10 @@ export default function AttestorPage() {
                                                                     <span>{claim.attestorCount} / {claim.requiredAttestors} required</span>
                                                                 </div>
                                                                 <div className="w-full bg-slate-800 rounded-full h-2">
-                                                                    <div 
+                                                                    <div
                                                                         className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all duration-500"
-                                                                        style={{ 
-                                                                            width: `${Math.min(100, ((claim.attestorCount || 0) / (claim.requiredAttestors || 1)) * 100)}%` 
+                                                                        style={{
+                                                                            width: `${Math.min(100, ((claim.attestorCount || 0) / (claim.requiredAttestors || 1)) * 100)}%`
                                                                         }}
                                                                     />
                                                                 </div>
@@ -742,17 +709,19 @@ export default function AttestorPage() {
                                                                         {claim.documentHash.slice(0, 20)}...
                                                                     </span>
                                                                 </div>
-                                                                <a
-                                                                    href={claim.documentHash.startsWith('ipfs://')
-                                                                        ? `https://gateway.pinata.cloud/ipfs/${claim.documentHash.replace('ipfs://', '')}`
-                                                                        : '#'}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 text-sm transition-colors"
-                                                                >
-                                                                    <ExternalLink className="w-3 h-3" />
-                                                                    View Proof
-                                                                </a>
+                                                                {selectedTab !== 'history' && (
+                                                                    <a
+                                                                        href={claim.documentHash.startsWith('ipfs://')
+                                                                            ? `https://gateway.pinata.cloud/ipfs/${claim.documentHash.replace('ipfs://', '')}`
+                                                                            : '#'}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 text-sm transition-colors"
+                                                                    >
+                                                                        <ExternalLink className="w-3 h-3" />
+                                                                        View Proof
+                                                                    </a>
+                                                                )}
                                                             </div>
                                                         </div>
                                                         {/* Actions */}
@@ -772,7 +741,7 @@ export default function AttestorPage() {
                                                                         </>
                                                                     )}
                                                                 </Button>
-                                                                
+
                                                                 <Button
                                                                     variant="outline"
                                                                     onClick={() => handleFlag(claim.id)}
@@ -793,9 +762,35 @@ export default function AttestorPage() {
                                                         )}
 
                                                         {selectedTab === 'history' && (
-                                                            <div className="flex items-center gap-2 ml-6 text-emerald-400">
-                                                                <CheckCircle2 className="w-4 h-4" />
-                                                                <span className="text-sm font-medium">Completed</span>
+                                                            <div className="flex flex-col gap-3 ml-6">
+                                                                <div className="bg-slate-800/50 rounded-lg p-4 border border-emerald-500/30">
+                                                                    <div className="flex items-center gap-2 mb-3">
+                                                                        <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                                                                        <span className="text-sm font-semibold text-emerald-400">Attestation Complete</span>
+                                                                    </div>
+                                                                    <div className="space-y-2 text-sm">
+                                                                        <div className="flex justify-between items-center">
+                                                                            <span className="text-slate-400">Required Attestors:</span>
+                                                                            <span className="text-white font-mono">{claim.requiredAttestors}</span>
+                                                                        </div>
+                                                                        <div className="flex justify-between items-center">
+                                                                            <span className="text-slate-400">Attestors Reached:</span>
+                                                                            <span className="text-emerald-400 font-mono font-semibold">{claim.attestorCount}</span>
+                                                                        </div>
+                                                                        <div className="flex justify-between items-center pt-2 border-t border-slate-700">
+                                                                            <span className="text-slate-400">Criteria Fulfilled:</span>
+                                                                            <span className="text-emerald-400 font-mono font-bold">
+                                                                                {claim.attestorCount}/{claim.requiredAttestors} ✓
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="flex justify-between items-center">
+                                                                            <span className="text-slate-400">Final Status:</span>
+                                                                            <Badge variant={getStatusColor(claim.status) as any} className="ml-2">
+                                                                                {getStatusLabel(claim.status)}
+                                                                            </Badge>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         )}
                                                     </div>
