@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { cn } from '@/lib/utils';
 import { LayoutDashboard, ShieldCheck, PieChart } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function Navbar() {
     const pathname = usePathname();
@@ -16,55 +17,59 @@ export default function Navbar() {
     ];
 
     return (
-        <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
-            <div className="max-w-7xl mx-auto flex h-16 items-center justify-between px-6">
-                {/* Logo / Brand */}
-                <div className="flex items-center gap-8">
-                    <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-blue-500 flex items-center justify-center professional-shadow">
-                            <span className="font-light text-primary-foreground">Y</span>
-                        </div>
-                        <span className="text-xl font-thin gradient-text tracking-wide">
-                            YieldProof
-                        </span>
-                    </Link>
+        <nav className="sticky top-0 z-50 w-full glass-card border-b border-slate-700/50 flex h-16 items-center justify-between px-6">
+            {/* Logo / Brand */}
+            <div className="flex items-center gap-8">
+                <Link href="/" className="flex items-center group">
+                    <span className="text-xl font-light text-white group-hover:text-slate-200 transition-colors duration-300 tracking-wide">
+                        YieldProof
+                    </span>
+                </Link>
 
-                    {/* Navigation Links */}
-                    <div className="hidden md:flex items-center gap-1">
-                        {navItems.map((item) => {
-                            const Icon = item.icon;
-                            const isActive = pathname === item.href;
+                {/* Navigation Links */}
+                <div className="hidden md:flex items-center gap-2">
+                    {navItems.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = pathname === item.href;
 
-                            return (
+                        return (
+                            <motion.div key={item.href} whileHover={{ y: -1 }} whileTap={{ y: 0 }}>
                                 <Link
-                                    key={item.href}
                                     href={item.href}
                                     className={cn(
-                                        "flex items-center gap-2 px-4 py-2 text-sm font-light rounded-lg transition-all duration-200 tracking-wide",
+                                        "flex items-center gap-2 px-4 py-2 text-sm font-light rounded-xl transition-all duration-300 tracking-wide relative overflow-hidden group",
                                         isActive
-                                            ? "bg-primary text-primary-foreground professional-shadow"
-                                            : "gradient-text-subtle hover:text-foreground hover:bg-accent"
+                                            ? "bg-slate-800/50 text-white border border-indigo-500/30 shadow-lg shadow-indigo-500/10"
+                                            : "text-slate-300 hover:text-white hover:bg-slate-800/30 border border-transparent hover:border-slate-600/30"
                                     )}
                                 >
-                                    <Icon className="w-4 h-4" />
-                                    {item.name}
-                                </Link>
-                            );
-                        })}
-                    </div>
-                </div>
+                                    {/* Subtle gradient overlay for active state */}
+                                    {isActive && (
+                                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-blue-500/5 to-indigo-500/10" />
+                                    )}
 
-                {/* Right Side - Wallet */}
-                <div className="flex items-center gap-4">
-                    <ConnectButton
-                        showBalance={false}
-                        accountStatus={{
-                            smallScreen: 'avatar',
-                            largeScreen: 'full',
-                        }}
-                    />
+                                    {/* Hover shimmer effect */}
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
+
+                                    <div className="relative z-10 flex items-center gap-2">
+                                        <Icon className="w-4 h-4" />
+                                        {item.name}
+                                    </div>
+                                </Link>
+                            </motion.div>
+                        );
+                    })}
                 </div>
             </div>
+
+            {/* Right Side - Wallet */}
+            <ConnectButton
+                showBalance={false}
+                accountStatus={{
+                    smallScreen: 'avatar',
+                    largeScreen: 'full',
+                }}
+            />
         </nav>
     );
 }

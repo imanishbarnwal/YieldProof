@@ -10,13 +10,13 @@ import { Select } from '@/components/ui/Select';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, useReadContracts } from 'wagmi';
 import { formatEther, parseEther, type Abi } from 'viem';
 import { CONTRACTS } from '@/app/config/contracts';
-import { 
-    Upload, 
-    FileText, 
-    PlusCircle, 
-    Loader2, 
-    ExternalLink, 
-    Info, 
+import {
+    Upload,
+    FileText,
+    PlusCircle,
+    Loader2,
+    ExternalLink,
+    Info,
     CheckCircle2,
     Shield,
     TrendingUp,
@@ -132,29 +132,29 @@ export default function IssuerPage() {
     useEffect(() => {
         if (claimsData && address) {
             console.log('Processing claims data:', { claimsData, address, totalClaims });
-            
+
             const userDisclosures = claimsData
                 .map((claimResult, index) => {
                     if (!claimResult.result) {
                         console.log(`No result for claim ${index}`);
                         return null;
                     }
-                    
+
                     const claim = claimResult.result as any[];
                     console.log(`Claim ${index}:`, claim);
-                    
+
                     // Ensure we have the expected array structure
                     if (!Array.isArray(claim) || claim.length < 7) {
                         console.log(`Invalid claim structure for claim ${index}:`, claim);
                         return null;
                     }
-                    
+
                     // Only include claims from current user (claim[5] is the issuer address)
                     if (!claim[5] || claim[5].toLowerCase() !== address.toLowerCase()) {
                         console.log(`Claim ${index} not from current user:`, claim[5], 'vs', address);
                         return null;
                     }
-                    
+
                     let status = 'submitted';
                     if (claim[6] === 1) status = 'attesting';
                     else if (claim[6] === 2) status = 'verified';
@@ -189,7 +189,7 @@ export default function IssuerPage() {
                     return disclosure;
                 })
                 .filter(Boolean) as Disclosure[];
-            
+
             console.log('Final processed user disclosures:', userDisclosures);
             setDisclosures(userDisclosures);
         } else {
@@ -209,12 +209,12 @@ export default function IssuerPage() {
     // Calculate dynamic metrics based on actual disclosures
     const vaultMetrics: VaultMetrics = {
         totalDisclosures: disclosures.length,
-        auditSuccessRate: disclosures.length > 0 
+        auditSuccessRate: disclosures.length > 0
             ? Math.round((disclosures.filter(d => d.status === 'verified').length / disclosures.length) * 100)
             : 0,
-        accuracyTier: disclosures.length === 0 ? 'NEW' : 
-                     disclosures.length < 3 ? 'BUILDING' :
-                     disclosures.filter(d => d.status === 'verified').length / disclosures.length > 0.8 ? 'EXCELLENT' : 'GOOD',
+        accuracyTier: disclosures.length === 0 ? 'NEW' :
+            disclosures.length < 3 ? 'BUILDING' :
+                disclosures.filter(d => d.status === 'verified').length / disclosures.length > 0.8 ? 'EXCELLENT' : 'GOOD',
         totalStaked: disclosures.reduce((sum, d) => sum + parseFloat(d.currentStake || '0'), 0).toFixed(1),
         avgVerificationTime: '2.4 days',
         reputationScore: Math.min(100, disclosures.length * 15 + disclosures.filter(d => d.status === 'verified').length * 10)
@@ -233,7 +233,7 @@ export default function IssuerPage() {
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
-        
+
         // Real-time date validation
         if (name === 'startDate' || name === 'endDate') {
             const newFormData = { ...formData, [name]: value };
@@ -243,7 +243,7 @@ export default function IssuerPage() {
 
     const validateDates = (startDateStr: string, endDateStr: string) => {
         setDateValidationError(null);
-        
+
         if (!startDateStr || !endDateStr) {
             return; // Don't validate until both dates are selected
         }
@@ -251,7 +251,7 @@ export default function IssuerPage() {
         const start = new Date(startDateStr);
         const end = new Date(endDateStr);
         const now = getCurrentDate();
-        
+
         // Set all dates to midnight for proper comparison (ignore time)
         const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
         const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
@@ -322,7 +322,7 @@ export default function IssuerPage() {
     const formatPeriod = (startDate: string, endDate: string): string => {
         const start = new Date(startDate);
         const end = new Date(endDate);
-        
+
         const fullOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' };
         const monthYearOptions: Intl.DateTimeFormatOptions = { month: 'short', year: 'numeric' };
 
@@ -356,7 +356,7 @@ export default function IssuerPage() {
         const start = new Date(formData.startDate);
         const end = new Date(formData.endDate);
         const now = getCurrentDate();
-        
+
         // Set all dates to midnight for proper comparison (ignore time)
         const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
         const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
@@ -397,7 +397,7 @@ export default function IssuerPage() {
 
         try {
             const period = formatPeriod(formData.startDate, formData.endDate);
-            
+
             writeContract({
                 address: CONTRACTS.YieldProof.address as `0x${string}`,
                 abi: CONTRACTS.YieldProof.abi as Abi,
@@ -482,561 +482,488 @@ export default function IssuerPage() {
     return (
         <div className="min-h-screen bg-slate-950 text-white">
             <div className="max-w-7xl mx-auto px-6 py-8">
-            {/* Hero Section */}
-            <AnimatedSection className="mb-12">
-                <div className="text-center space-y-8 max-w-4xl mx-auto">
-                    <div className="flex items-center justify-center gap-3 mb-6">
-                        <Badge variant="success" className="px-4 py-2 text-sm font-medium rounded-full" pulse>
-                            <div className="w-2 h-2 bg-emerald-400 rounded-full mr-2 animate-pulse" />
-                            Live Dashboard
-                        </Badge>
-                    </div>
-                    
-                    <div className="space-y-6">
-                        <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-tight">
-                            Issuer Dashboard
-                        </h1>
-                        <p className="text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed font-light">
-                            Submit transparent yield disclosures and build institutional trust through cryptographic verification.
-                        </p>
-                    </div>
+                {/* Hero Section */}
+                <AnimatedSection className="mb-12">
+                    <div className="text-center space-y-8 max-w-4xl mx-auto">
+                        <div className="flex items-center justify-center gap-3 mb-6">
+                            <Badge variant="success" className="px-4 py-2 text-sm font-medium rounded-full" pulse>
+                                <div className="w-2 h-2 bg-emerald-400 rounded-full mr-2 animate-pulse" />
+                                Live Dashboard
+                            </Badge>
+                        </div>
 
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 max-w-4xl mx-auto">
-                        <div className="text-center space-y-2">
-                            <div className="text-2xl font-bold text-white">{vaultMetrics.totalDisclosures}</div>
-                            <div className="text-sm text-slate-400">Total Disclosures</div>
+                        <div className="space-y-6">
+                            <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-tight">
+                                Issuer Dashboard
+                            </h1>
+                            <p className="text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed font-light">
+                                Submit transparent yield disclosures and build institutional trust through cryptographic verification.
+                            </p>
                         </div>
-                        <div className="text-center space-y-2">
-                            <div className="text-2xl font-bold text-white">{vaultMetrics.auditSuccessRate}%</div>
-                            <div className="text-sm text-slate-400">Success Rate</div>
-                        </div>
-                        <div className="text-center space-y-2">
-                            <div className="text-2xl font-bold text-white">{vaultMetrics.accuracyTier}</div>
-                            <div className="text-sm text-slate-400">Reputation</div>
-                        </div>
-                        <div className="text-center space-y-2">
-                            <div className="text-2xl font-bold text-white">{vaultMetrics.reputationScore}</div>
-                            <div className="text-sm text-slate-400">Score</div>
+
+                        {/* Stats Grid */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 max-w-4xl mx-auto">
+                            <div className="text-center space-y-2">
+                                <div className="text-2xl font-bold text-white">{vaultMetrics.totalDisclosures}</div>
+                                <div className="text-sm text-slate-400">Total Disclosures</div>
+                            </div>
+                            <div className="text-center space-y-2">
+                                <div className="text-2xl font-bold text-white">{vaultMetrics.auditSuccessRate}%</div>
+                                <div className="text-sm text-slate-400">Success Rate</div>
+                            </div>
+                            <div className="text-center space-y-2">
+                                <div className="text-2xl font-bold text-white">{vaultMetrics.accuracyTier}</div>
+                                <div className="text-sm text-slate-400">Reputation</div>
+                            </div>
+                            <div className="text-center space-y-2">
+                                <div className="text-2xl font-bold text-white">{vaultMetrics.reputationScore}</div>
+                                <div className="text-sm text-slate-400">Score</div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </AnimatedSection>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                {/* Left Column - Discloser Accountability Guardrails */}
-                <AnimatedSection delay={0.1}>
-                    <Card className="h-full backdrop-blur-xl">
-                        <CardHeader>
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-lg flex items-center justify-center shadow-lg">
-                                    <Shield className="w-5 h-5 text-white" />
-                                </div>
-                                <div>
-                                    <CardTitle className="text-white">Accountability Guardrails</CardTitle>
-                                    <CardDescription className="text-slate-400">Built-in protection mechanisms</CardDescription>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="flex items-start gap-4 p-4 bg-gradient-to-r from-emerald-500/10 to-emerald-600/5 rounded-lg border border-emerald-500/20">
-                                <div className="w-2 h-2 bg-emerald-400 rounded-full mt-2"></div>
-                                <div>
-                                    <p className="text-white font-medium mb-1">Zero Fund Access</p>
-                                    <p className="text-slate-400 text-sm">Disclosers never touch or manage investor principal.</p>
-                                </div>
-                            </div>
-                            <div className="flex items-start gap-4 p-4 bg-gradient-to-r from-indigo-500/10 to-indigo-600/5 rounded-lg border border-indigo-500/20">
-                                <div className="w-2 h-2 bg-indigo-400 rounded-full mt-2"></div>
-                                <div>
-                                    <p className="text-white font-medium mb-1">Cryptographic Proof</p>
-                                    <p className="text-slate-400 text-sm">Every disclosure requires verifiable proof of earnings.</p>
-                                </div>
-                            </div>
-                            <div className="flex items-start gap-4 p-4 bg-gradient-to-r from-purple-500/10 to-purple-600/5 rounded-lg border border-purple-500/20">
-                                <div className="w-2 h-2 bg-purple-400 rounded-full mt-2"></div>
-                                <div>
-                                    <p className="text-white font-medium mb-1">Reputation System</p>
-                                    <p className="text-slate-400 text-sm">Verified disclosures boost your on-chain accuracy tier.</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
                 </AnimatedSection>
 
-                {/* Right Column - Why disclose on YieldProof? */}
-                <AnimatedSection delay={0.2}>
-                    <Card className="h-full backdrop-blur-xl">
-                        <CardHeader>
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
-                                    <TrendingUp className="w-5 h-5 text-white" />
-                                </div>
-                                <div>
-                                    <CardTitle className="text-white">Why YieldProof?</CardTitle>
-                                    <CardDescription className="text-slate-400">Benefits of transparent disclosure</CardDescription>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {[
-                                "Build institutional trust with verifiable track records",
-                                "Prove compliance with automated distribution enforcement", 
-                                "Access transparent capital markets via reputation",
-                                "Prevent accusations of profit under-reporting"
-                            ].map((benefit, index) => (
-                                <div key={index} className="flex items-start gap-3 p-3 hover:bg-gradient-to-r hover:from-indigo-500/10 hover:to-purple-500/5 rounded-lg transition-all duration-300 border border-transparent hover:border-indigo-500/20">
-                                    <div className="w-2 h-2 bg-indigo-400 rounded-full mt-2 flex-shrink-0"></div>
-                                    <p className="text-slate-300 text-sm">{benefit}</p>
-                                </div>
-                            ))}
-                        </CardContent>
-                    </Card>
-                </AnimatedSection>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Left Column - Disclose Performance Form */}
-                <AnimatedSection delay={0.4}>
-                    <Card className="backdrop-blur-xl">
-                        <CardHeader>
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
-                                    <PlusCircle className="w-5 h-5 text-white" />
-                                </div>
-                                <div>
-                                    <CardTitle className="text-white">New Disclosure</CardTitle>
-                                    <CardDescription className="text-slate-400">
-                                        Submit yield proof for verification
-                                    </CardDescription>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <form onSubmit={handleSubmit} className="space-y-6">
-                                <Select
-                                    label="Select Vault"
-                                    value={selectedVault}
-                                    onChange={(e) => setSelectedVault(e.target.value)}
-                                    helperText="Choose the vault for this yield disclosure"
-                                >
-                                    <option>YieldProof Demo Vault</option>
-                                </Select>
-
-                                <Input
-                                    label="Asset Sub-ID / Label"
-                                    placeholder="e.g. MANTLE-MNT-LP-V3"
-                                    name="assetId"
-                                    value={formData.assetId}
-                                    onChange={handleInputChange}
-                                    helperText="Unique identifier for the asset generating yield"
-                                />
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <Input
-                                        label="Start Date"
-                                        type="date"
-                                        name="startDate"
-                                        value={formData.startDate}
-                                        onChange={handleInputChange}
-                                        max={formData.endDate || currentDate}
-                                        helperText="Beginning of yield period"
-                                    />
-                                    <Input
-                                        label="End Date"
-                                        type="date"
-                                        name="endDate"
-                                        value={formData.endDate}
-                                        onChange={handleInputChange}
-                                        min={formData.startDate}
-                                        max={currentDate}
-                                        helperText="Must be today or earlier"
-                                    />
-                                </div>
-
-                                {/* Date validation feedback */}
-                                {dateValidationError && (
-                                    <div className="flex items-start gap-2 p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
-                                        <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
-                                        <p className="text-sm text-red-300">{dateValidationError}</p>
-                                    </div>
-                                )}
-
-                                {/* Success feedback when dates are valid */}
-                                {formData.startDate && formData.endDate && !dateValidationError && (
-                                    <div className="flex items-start gap-2 p-4 bg-emerald-900/20 border border-emerald-500/30 rounded-lg">
-                                        <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
-                                        <div className="text-sm text-emerald-300">
-                                            <p className="font-medium">Valid date range selected</p>
-                                            <p className="text-emerald-400/80 mt-1">Period: {formatPeriod(formData.startDate, formData.endDate)}</p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <Input
-                                    label="Yield Amount (MNT)"
-                                    placeholder="0.00"
-                                    name="yieldAmount"
-                                    value={formData.yieldAmount}
-                                    onChange={handleInputChange}
-                                    helperText="Total yield generated during the specified period"
-                                />
-
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                                        Yield Proof Document
-                                    </label>
-                                    
-                                    {!uploadedCid ? (
-                                        <div className="relative border-2 border-dashed border-slate-600 rounded-lg p-8 text-center hover:border-slate-500 transition-colors group">
-                                            <input
-                                                type="file"
-                                                className="absolute inset-0 opacity-0 cursor-pointer"
-                                                onChange={handleFileUpload}
-                                                accept=".pdf,.csv,.xls,.xlsx,.jpg,.png"
-                                                disabled={isUploading}
-                                            />
-                                            {isUploading ? (
-                                                <Loader2 className="w-8 h-8 text-blue-400 animate-spin mx-auto mb-2" />
-                                            ) : (
-                                                <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2 group-hover:text-blue-400 transition-colors" />
-                                            )}
-                                            <p className="text-slate-300 font-medium">
-                                                {isUploading ? "Uploading to IPFS..." : "Click to Upload Proof"}
-                                            </p>
-                                            <p className="text-slate-500 text-sm mt-1">PDF, CSV, Excel, Images</p>
-                                        </div>
-                                    ) : (
-                                        <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4 flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
-                                                    <FileText className="w-5 h-5 text-green-400" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-green-300 font-medium">Document uploaded</p>
-                                                    <p className="text-green-400/70 text-sm">IPFS: {uploadedCid?.slice(0, 20)}...</p>
-                                                </div>
-                                            </div>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => {
-                                                    setUploadedCid(null);
-                                                    setFormData(prev => ({ ...prev, documentHash: '' }));
-                                                }}
-                                                className="text-slate-400 hover:text-white"
-                                            >
-                                                Change
-                                            </Button>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <Button
-                                    type="submit"
-                                    className="w-full bg-slate-700 hover:bg-slate-600 text-white font-medium"
-                                    disabled={isWritePending || isConfirming || isUploading || !isConnected || !!dateValidationError}
-                                >
-                                    {isWritePending || isConfirming ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            {isWritePending ? 'Confirming...' : 'Submitting to Blockchain...'}
-                                        </>
-                                    ) : (
-                                        <>
-                                            <PlusCircle className="mr-2 h-4 w-4" />
-                                            Submit Disclosure
-                                        </>
-                                    )}
-                                </Button>
-
-                                <div className="flex items-start gap-2 mt-4 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
-                                    <Info className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
-                                    <div className="text-xs text-slate-400">
-                                        <span className="font-semibold text-slate-300">MVP:</span> Proofs are public.
-                                        <br />
-                                        <span className="text-slate-400">Encrypted proofs & ZK verification coming in V2.</span>
-                                    </div>
-                                </div>
-                            </form>
-                        </CardContent>
-                    </Card>
-                </AnimatedSection>
-
-                {/* Right Column - Disclosure History */}
-                <AnimatedSection delay={0.5}>
-                    <Card className="backdrop-blur-xl">
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Left Column - Disclose Performance Form */}
+                    <AnimatedSection delay={0.4}>
+                        <Card className="backdrop-blur-xl">
+                            <CardHeader>
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-slate-700/50 rounded-lg flex items-center justify-center">
-                                        <Clock className="w-5 h-5 text-slate-400" />
+                                    <div className="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
+                                        <PlusCircle className="w-5 h-5 text-white" />
                                     </div>
                                     <div>
-                                        <CardTitle className="text-white">Disclosure History</CardTitle>
+                                        <CardTitle className="text-white">New Disclosure</CardTitle>
                                         <CardDescription className="text-slate-400">
-                                            Track verification status of your submissions
+                                            Submit yield proof for verification
                                         </CardDescription>
                                     </div>
                                 </div>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                        refetchTotalClaims();
-                                        refetchClaims();
-                                    }}
-                                    className="text-slate-400 hover:text-white"
-                                >
-                                    <Activity className="w-4 h-4 mr-1" />
-                                    Refresh
-                                </Button>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            {disclosures.length === 0 ? (
-                                <div className="text-center py-12">
-                                    <div className="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <FileText className="w-8 h-8 text-slate-500" />
-                                    </div>
-                                    <h3 className="text-lg font-medium text-slate-300 mb-2">No disclosures yet</h3>
-                                    <p className="text-slate-500 text-sm max-w-sm mx-auto">
-                                        Submit your first yield disclosure to start building your reputation on-chain.
-                                    </p>
-                                </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    {disclosures.map((disclosure) => (
-                                        <div key={disclosure.id} className="bg-slate-800/30 rounded-lg p-4 border border-slate-700/50 hover:bg-slate-800/50 transition-colors">
-                                            <div className="flex items-start justify-between mb-3">
-                                                <div>
-                                                    <h4 className="font-medium text-white">{disclosure.assetId}</h4>
-                                                    <p className="text-sm text-slate-400">{disclosure.period}</p>
-                                                </div>
-                                                <Badge variant={getStatusColor(disclosure.status) as any}>
-                                                    {getStatusLabel(disclosure.status)}
-                                                </Badge>
-                                            </div>
-                                            
-                                            <div className="grid grid-cols-2 gap-4 mb-3">
-                                                <div>
-                                                    <p className="text-xs text-slate-500">Yield Amount</p>
-                                                    <p className="text-sm font-mono text-green-400">
-                                                        {disclosure.yieldAmount.toLocaleString(undefined, {
-                                                            minimumFractionDigits: 0,
-                                                            maximumFractionDigits: 6
-                                                        })} MNT
-                                                    </p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs text-slate-500">Submitted</p>
-                                                    <p className="text-sm text-slate-300">{disclosure.submittedAt.toLocaleDateString()}</p>
-                                                </div>
-                                            </div>
-
-                                            {(disclosure.status === 'submitted' || disclosure.status === 'attesting') && (
-                                                <div className="mb-3">
-                                                    <div className="flex justify-between text-xs text-slate-400 mb-1">
-                                                        <span>Attestation Progress</span>
-                                                        <span>{disclosure.attestorCount} / {disclosure.minAttestors} attestors</span>
-                                                    </div>
-                                                    <div className="w-full bg-slate-700 rounded-full h-2">
-                                                        <div 
-                                                            className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500"
-                                                            style={{ width: `${(disclosure.attestorCount / disclosure.minAttestors) * 100}%` }}
-                                                        />
-                                                    </div>
-                                                    <p className="text-xs text-slate-500 mt-1">
-                                                        Total Stake: {disclosure.currentStake} MNT
-                                                    </p>
-                                                </div>
-                                            )}
-
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <FileText className="w-4 h-4 text-slate-400" />
-                                                    <span className="text-xs text-slate-500 font-mono">
-                                                        {disclosure.proofHash.slice(0, 10)}...
-                                                    </span>
-                                                </div>
-                                                {disclosure.documentHash && (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="text-blue-400 hover:text-blue-300 p-1"
-                                                        onClick={() => window.open(
-                                                            disclosure.documentHash.startsWith('ipfs://')
-                                                                ? `https://gateway.pinata.cloud/ipfs/${disclosure.documentHash.replace('ipfs://', '')}`
-                                                                : '#',
-                                                            '_blank'
-                                                        )}
-                                                    >
-                                                        <ExternalLink className="w-3 h-3" />
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </AnimatedSection>
-            </div>
-
-            {/* Enforce Distribution Section */}
-            <AnimatedSection delay={0.6} className="mt-12">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Left Column - Enforce Distribution Form */}
-                    <Card className="backdrop-blur-xl">
-                        <CardHeader>
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-slate-700 rounded-lg flex items-center justify-center">
-                                    <Scale className="w-5 h-5 text-white" />
-                                </div>
-                                <div>
-                                    <CardTitle className="text-white">Enforce Distribution</CardTitle>
-                                    <CardDescription className="text-slate-400">
-                                        Deposit realized yield into escrow for verified claimants.
-                                    </CardDescription>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <form onSubmit={handleEscrowFunding} className="space-y-6">
-                                <div>
-                                    <label className="form-label">Vault Escrow</label>
-                                    <select 
-                                        value={escrowData.vaultName}
-                                        onChange={(e) => setEscrowData(prev => ({ ...prev, vaultName: e.target.value }))}
-                                        className="form-input w-full appearance-none cursor-pointer"
+                            </CardHeader>
+                            <CardContent>
+                                <form onSubmit={handleSubmit} className="space-y-6">
+                                    <Select
+                                        label="Select Vault"
+                                        value={selectedVault}
+                                        onChange={(e) => setSelectedVault(e.target.value)}
+                                        helperText="Choose the vault for this yield disclosure"
                                     >
-                                        <option>YieldProof Demo Vault (0 Pool)</option>
-                                    </select>
-                                    <p className="text-slate-400 text-sm mt-1">Select the vault to fund with realized yield</p>
-                                </div>
+                                        <option>YieldProof Demo Vault</option>
+                                    </Select>
 
-                                <Input
-                                    label="Amount to Fund (MNT)"
-                                    placeholder="0.00"
-                                    name="amount"
-                                    value={escrowData.amount}
-                                    onChange={handleEscrowInputChange}
-                                    helperText="Amount of realized yield to deposit into escrow"
-                                />
+                                    <Input
+                                        label="Asset Sub-ID / Label"
+                                        placeholder="e.g. MANTLE-MNT-LP-V3"
+                                        name="assetId"
+                                        value={formData.assetId}
+                                        onChange={handleInputChange}
+                                        helperText="Unique identifier for the asset generating yield"
+                                    />
 
-                                <Button
-                                    type="submit"
-                                    className="w-full bg-slate-700 hover:bg-slate-600 text-white font-medium"
-                                    disabled={isWritePending || isConfirming || !isConnected}
-                                >
-                                    {isWritePending || isConfirming ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            {isWritePending ? 'Confirming...' : 'Processing Transaction...'}
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Scale className="mr-2 h-4 w-4" />
-                                            Enforce Escrow Funding
-                                        </>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <Input
+                                            label="Start Date"
+                                            type="date"
+                                            name="startDate"
+                                            value={formData.startDate}
+                                            onChange={handleInputChange}
+                                            max={formData.endDate || currentDate}
+                                            helperText="Beginning of yield period"
+                                        />
+                                        <Input
+                                            label="End Date"
+                                            type="date"
+                                            name="endDate"
+                                            value={formData.endDate}
+                                            onChange={handleInputChange}
+                                            min={formData.startDate}
+                                            max={currentDate}
+                                            helperText="Must be today or earlier"
+                                        />
+                                    </div>
+
+                                    {/* Date validation feedback */}
+                                    {dateValidationError && (
+                                        <div className="flex items-start gap-2 p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
+                                            <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
+                                            <p className="text-sm text-red-300">{dateValidationError}</p>
+                                        </div>
                                     )}
-                                </Button>
 
-                                <div className="flex items-start gap-2 mt-4 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
-                                    <Lock className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
-                                    <div className="text-xs text-slate-400">
-                                        <span className="font-semibold text-slate-300">Funds are held in the vault contract and only released to verified claimants.</span>
-                                    </div>
-                                </div>
-                            </form>
-                        </CardContent>
-                    </Card>
-
-                    {/* Right Column - Escrow Status & Balance */}
-                    <Card className="backdrop-blur-xl">
-                        <CardHeader>
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-slate-700/50 rounded-lg flex items-center justify-center">
-                                    <Coins className="w-5 h-5 text-slate-400" />
-                                </div>
-                                <div>
-                                    <CardTitle className="text-white">Escrow Balance</CardTitle>
-                                    <CardDescription className="text-slate-400">
-                                        Current funds available for distribution
-                                    </CardDescription>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-6">
-                                {/* Balance Overview */}
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-700/50">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <Coins className="w-4 h-4 text-slate-400" />
-                                            <span className="text-sm text-slate-400">Available Balance</span>
-                                        </div>
-                                        <div className="text-xl font-medium text-white">{totalEscrowBalance.toLocaleString()} MNT</div>
-                                    </div>
-                                    
-                                    <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-700/50">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <Clock className="w-4 h-4 text-slate-400" />
-                                            <span className="text-sm text-slate-400">Pending Distribution</span>
-                                        </div>
-                                        <div className="text-xl font-medium text-white">{pendingDistributions.toLocaleString()} MNT</div>
-                                    </div>
-                                </div>
-
-                                {/* Recent Escrow Transactions */}
-                                <div>
-                                    <h4 className="text-sm font-medium text-slate-300 mb-3">Recent Escrow Transactions</h4>
-                                    {escrowFundings.length === 0 ? (
-                                        <div className="text-center py-8">
-                                            <div className="w-12 h-12 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-3">
-                                                <Coins className="w-6 h-6 text-slate-500" />
+                                    {/* Success feedback when dates are valid */}
+                                    {formData.startDate && formData.endDate && !dateValidationError && (
+                                        <div className="flex items-start gap-2 p-4 bg-emerald-900/20 border border-emerald-500/30 rounded-lg">
+                                            <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                                            <div className="text-sm text-emerald-300">
+                                                <p className="font-medium">Valid date range selected</p>
+                                                <p className="text-emerald-400/80 mt-1">Period: {formatPeriod(formData.startDate, formData.endDate)}</p>
                                             </div>
-                                            <p className="text-slate-500 text-sm">No escrow transactions yet</p>
                                         </div>
-                                    ) : (
-                                        <div className="space-y-3">
-                                            {escrowFundings.slice(0, 3).map((funding) => (
-                                                <div key={funding.id} className="bg-slate-800/30 rounded-lg p-3 border border-slate-700/50">
-                                                    <div className="flex items-center justify-between mb-2">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className={`w-2 h-2 rounded-full ${
-                                                                funding.status === 'confirmed' ? 'bg-slate-400' :
-                                                                funding.status === 'pending' ? 'bg-slate-500' : 'bg-slate-400'
-                                                            }`} />
-                                                            <span className="text-sm font-medium text-white">
-                                                                {funding.amount.toLocaleString()} MNT
-                                                            </span>
-                                                        </div>
-                                                        <Badge variant={
-                                                            funding.status === 'confirmed' ? 'success' :
-                                                            funding.status === 'pending' ? 'warning' : 'info'
-                                                        }>
-                                                            {funding.status}
-                                                        </Badge>
+                                    )}
+
+                                    <Input
+                                        label="Yield Amount (MNT)"
+                                        placeholder="0.00"
+                                        name="yieldAmount"
+                                        value={formData.yieldAmount}
+                                        onChange={handleInputChange}
+                                        helperText="Total yield generated during the specified period"
+                                    />
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-300 mb-2">
+                                            Yield Proof Document
+                                        </label>
+
+                                        {!uploadedCid ? (
+                                            <div className="relative border-2 border-dashed border-slate-600 rounded-lg p-8 text-center hover:border-slate-500 transition-colors group">
+                                                <input
+                                                    type="file"
+                                                    className="absolute inset-0 opacity-0 cursor-pointer"
+                                                    onChange={handleFileUpload}
+                                                    accept=".pdf,.csv,.xls,.xlsx,.jpg,.png"
+                                                    disabled={isUploading}
+                                                />
+                                                {isUploading ? (
+                                                    <Loader2 className="w-8 h-8 text-blue-400 animate-spin mx-auto mb-2" />
+                                                ) : (
+                                                    <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2 group-hover:text-blue-400 transition-colors" />
+                                                )}
+                                                <p className="text-slate-300 font-medium">
+                                                    {isUploading ? "Uploading to IPFS..." : "Click to Upload Proof"}
+                                                </p>
+                                                <p className="text-slate-500 text-sm mt-1">PDF, CSV, Excel, Images</p>
+                                            </div>
+                                        ) : (
+                                            <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4 flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                                                        <FileText className="w-5 h-5 text-green-400" />
                                                     </div>
-                                                    <div className="flex items-center justify-between text-xs text-slate-400">
-                                                        <span>{funding.fundedAt.toLocaleDateString()}</span>
-                                                        {funding.txHash && (
-                                                            <span className="font-mono">{funding.txHash.slice(0, 10)}...</span>
-                                                        )}
+                                                    <div>
+                                                        <p className="text-green-300 font-medium">Document uploaded</p>
+                                                        <p className="text-green-400/70 text-sm">IPFS: {uploadedCid?.slice(0, 20)}...</p>
                                                     </div>
                                                 </div>
-                                            ))}
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setUploadedCid(null);
+                                                        setFormData(prev => ({ ...prev, documentHash: '' }));
+                                                    }}
+                                                    className="text-slate-400 hover:text-white"
+                                                >
+                                                    Change
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <Button
+                                        type="submit"
+                                        className="w-full bg-slate-700 hover:bg-slate-600 text-white font-medium"
+                                        disabled={isWritePending || isConfirming || isUploading || !isConnected || !!dateValidationError}
+                                    >
+                                        {isWritePending || isConfirming ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                {isWritePending ? 'Confirming...' : 'Submitting to Blockchain...'}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <PlusCircle className="mr-2 h-4 w-4" />
+                                                Submit Disclosure
+                                            </>
+                                        )}
+                                    </Button>
+
+                                    <div className="flex items-start gap-2 mt-4 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+                                        <Info className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                                        <div className="text-xs text-slate-400">
+                                            <span className="font-semibold text-slate-300">MVP:</span> Proofs are public.
+                                            <br />
+                                            <span className="text-slate-400">Encrypted proofs & ZK verification coming in V2.</span>
                                         </div>
-                                    )}
+                                    </div>
+                                </form>
+                            </CardContent>
+                        </Card>
+                    </AnimatedSection>
+
+                    {/* Right Column - Disclosure History */}
+                    <AnimatedSection delay={0.5}>
+                        <Card className="backdrop-blur-xl">
+                            <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-slate-700/50 rounded-lg flex items-center justify-center">
+                                            <Clock className="w-5 h-5 text-slate-400" />
+                                        </div>
+                                        <div>
+                                            <CardTitle className="text-white">Disclosure History</CardTitle>
+                                            <CardDescription className="text-slate-400">
+                                                Track verification status of your submissions
+                                            </CardDescription>
+                                        </div>
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                            refetchTotalClaims();
+                                            refetchClaims();
+                                        }}
+                                        className="text-slate-400 hover:text-white"
+                                    >
+                                        <Activity className="w-4 h-4 mr-1" />
+                                        Refresh
+                                    </Button>
                                 </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </CardHeader>
+                            <CardContent>
+                                {disclosures.length === 0 ? (
+                                    <div className="text-center py-12">
+                                        <div className="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <FileText className="w-8 h-8 text-slate-500" />
+                                        </div>
+                                        <h3 className="text-lg font-medium text-slate-300 mb-2">No disclosures yet</h3>
+                                        <p className="text-slate-500 text-sm max-w-sm mx-auto">
+                                            Submit your first yield disclosure to start building your reputation on-chain.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {disclosures.map((disclosure) => (
+                                            <div key={disclosure.id} className="bg-slate-800/30 rounded-lg p-4 border border-slate-700/50 hover:bg-slate-800/50 transition-colors">
+                                                <div className="flex items-start justify-between mb-3">
+                                                    <div>
+                                                        <h4 className="font-medium text-white">{disclosure.assetId}</h4>
+                                                        <p className="text-sm text-slate-400">{disclosure.period}</p>
+                                                    </div>
+                                                    <Badge variant={getStatusColor(disclosure.status) as any}>
+                                                        {getStatusLabel(disclosure.status)}
+                                                    </Badge>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4 mb-3">
+                                                    <div>
+                                                        <p className="text-xs text-slate-500">Yield Amount</p>
+                                                        <p className="text-sm font-mono text-green-400">
+                                                            {disclosure.yieldAmount.toLocaleString(undefined, {
+                                                                minimumFractionDigits: 0,
+                                                                maximumFractionDigits: 6
+                                                            })} MNT
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs text-slate-500">Submitted</p>
+                                                        <p className="text-sm text-slate-300">{disclosure.submittedAt.toLocaleDateString()}</p>
+                                                    </div>
+                                                </div>
+
+                                                {(disclosure.status === 'submitted' || disclosure.status === 'attesting') && (
+                                                    <div className="mb-3">
+                                                        <div className="flex justify-between text-xs text-slate-400 mb-1">
+                                                            <span>Attestation Progress</span>
+                                                            <span>{disclosure.attestorCount} / {disclosure.minAttestors} attestors</span>
+                                                        </div>
+                                                        <div className="w-full bg-slate-700 rounded-full h-2">
+                                                            <div
+                                                                className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500"
+                                                                style={{ width: `${(disclosure.attestorCount / disclosure.minAttestors) * 100}%` }}
+                                                            />
+                                                        </div>
+                                                        <p className="text-xs text-slate-500 mt-1">
+                                                            Total Stake: {disclosure.currentStake} MNT
+                                                        </p>
+                                                    </div>
+                                                )}
+
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <FileText className="w-4 h-4 text-slate-400" />
+                                                        <span className="text-xs text-slate-500 font-mono">
+                                                            {disclosure.proofHash.slice(0, 10)}...
+                                                        </span>
+                                                    </div>
+                                                    {disclosure.documentHash && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="text-blue-400 hover:text-blue-300 p-1"
+                                                            onClick={() => window.open(
+                                                                disclosure.documentHash.startsWith('ipfs://')
+                                                                    ? `https://gateway.pinata.cloud/ipfs/${disclosure.documentHash.replace('ipfs://', '')}`
+                                                                    : '#',
+                                                                '_blank'
+                                                            )}
+                                                        >
+                                                            <ExternalLink className="w-3 h-3" />
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </AnimatedSection>
                 </div>
-            </AnimatedSection>
+
+                {/* Enforce Distribution Section */}
+                <AnimatedSection delay={0.6} className="mt-12">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Left Column - Enforce Distribution Form */}
+                        <Card className="backdrop-blur-xl">
+                            <CardHeader>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-slate-700 rounded-lg flex items-center justify-center">
+                                        <Scale className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div>
+                                        <CardTitle className="text-white">Enforce Distribution</CardTitle>
+                                        <CardDescription className="text-slate-400">
+                                            Deposit realized yield into escrow for verified claimants.
+                                        </CardDescription>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <form onSubmit={handleEscrowFunding} className="space-y-6">
+                                    <div>
+                                        <label className="form-label">Vault Escrow</label>
+                                        <select
+                                            value={escrowData.vaultName}
+                                            onChange={(e) => setEscrowData(prev => ({ ...prev, vaultName: e.target.value }))}
+                                            className="form-input w-full appearance-none cursor-pointer"
+                                        >
+                                            <option>YieldProof Demo Vault (0 Pool)</option>
+                                        </select>
+                                        <p className="text-slate-400 text-sm mt-1">Select the vault to fund with realized yield</p>
+                                    </div>
+
+                                    <Input
+                                        label="Amount to Fund (MNT)"
+                                        placeholder="0.00"
+                                        name="amount"
+                                        value={escrowData.amount}
+                                        onChange={handleEscrowInputChange}
+                                        helperText="Amount of realized yield to deposit into escrow"
+                                    />
+
+                                    <Button
+                                        type="submit"
+                                        className="w-full bg-slate-700 hover:bg-slate-600 text-white font-medium"
+                                        disabled={isWritePending || isConfirming || !isConnected}
+                                    >
+                                        {isWritePending || isConfirming ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                {isWritePending ? 'Confirming...' : 'Processing Transaction...'}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Scale className="mr-2 h-4 w-4" />
+                                                Enforce Escrow Funding
+                                            </>
+                                        )}
+                                    </Button>
+
+                                    <div className="flex items-start gap-2 mt-4 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+                                        <Lock className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                                        <div className="text-xs text-slate-400">
+                                            <span className="font-semibold text-slate-300">Funds are held in the vault contract and only released to verified claimants.</span>
+                                        </div>
+                                    </div>
+                                </form>
+                            </CardContent>
+                        </Card>
+
+                        {/* Right Column - Escrow Status & Balance */}
+                        <Card className="backdrop-blur-xl">
+                            <CardHeader>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-slate-700/50 rounded-lg flex items-center justify-center">
+                                        <Coins className="w-5 h-5 text-slate-400" />
+                                    </div>
+                                    <div>
+                                        <CardTitle className="text-white">Escrow Balance</CardTitle>
+                                        <CardDescription className="text-slate-400">
+                                            Current funds available for distribution
+                                        </CardDescription>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-6">
+                                    {/* Balance Overview */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-700/50">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Coins className="w-4 h-4 text-slate-400" />
+                                                <span className="text-sm text-slate-400">Available Balance</span>
+                                            </div>
+                                            <div className="text-xl font-medium text-white">{totalEscrowBalance.toLocaleString()} MNT</div>
+                                        </div>
+
+                                        <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-700/50">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Clock className="w-4 h-4 text-slate-400" />
+                                                <span className="text-sm text-slate-400">Pending Distribution</span>
+                                            </div>
+                                            <div className="text-xl font-medium text-white">{pendingDistributions.toLocaleString()} MNT</div>
+                                        </div>
+                                    </div>
+
+                                    {/* Recent Escrow Transactions */}
+                                    <div>
+                                        <h4 className="text-sm font-medium text-slate-300 mb-3">Recent Escrow Transactions</h4>
+                                        {escrowFundings.length === 0 ? (
+                                            <div className="text-center py-8">
+                                                <div className="w-12 h-12 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-3">
+                                                    <Coins className="w-6 h-6 text-slate-500" />
+                                                </div>
+                                                <p className="text-slate-500 text-sm">No escrow transactions yet</p>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                {escrowFundings.slice(0, 3).map((funding) => (
+                                                    <div key={funding.id} className="bg-slate-800/30 rounded-lg p-3 border border-slate-700/50">
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className={`w-2 h-2 rounded-full ${funding.status === 'confirmed' ? 'bg-slate-400' :
+                                                                        funding.status === 'pending' ? 'bg-slate-500' : 'bg-slate-400'
+                                                                    }`} />
+                                                                <span className="text-sm font-medium text-white">
+                                                                    {funding.amount.toLocaleString()} MNT
+                                                                </span>
+                                                            </div>
+                                                            <Badge variant={
+                                                                funding.status === 'confirmed' ? 'success' :
+                                                                    funding.status === 'pending' ? 'warning' : 'info'
+                                                            }>
+                                                                {funding.status}
+                                                            </Badge>
+                                                        </div>
+                                                        <div className="flex items-center justify-between text-xs text-slate-400">
+                                                            <span>{funding.fundedAt.toLocaleDateString()}</span>
+                                                            {funding.txHash && (
+                                                                <span className="font-mono">{funding.txHash.slice(0, 10)}...</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </AnimatedSection>
             </div>
         </div>
     );

@@ -16,6 +16,7 @@
         "clsx": "^2.1.1",
         "framer-motion": "^12.26.1",
         "lucide-react": "^0.562.0",
+        "mermaid": "^11.12.2",
         "next": "16.1.1",
         "pinata-web3": "^0.5.4",
         "react": "^19",
