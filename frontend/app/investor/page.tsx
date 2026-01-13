@@ -59,6 +59,8 @@ interface ActiveDisclosure {
     attestationProgress: number;
     totalStake: number;
     yourShare: number;
+    yourSharePercentage: number;
+    isClaimed: boolean;
     proofHash: string;
 }
 
@@ -130,6 +132,14 @@ export default function InvestorPage() {
         query: { enabled: claimIndexes.length > 0 }
     });
 
+    // Read MIN_REQUIRED_ATTESTORS from YieldProof
+    const { data: minRequiredAttestorsData } = useReadContract({
+        address: CONTRACTS.YieldProof.address as `0x${string}`,
+        abi: CONTRACTS.YieldProof.abi as Abi,
+        functionName: 'MIN_REQUIRED_ATTESTORS'
+    });
+    const minRequiredAttestors = minRequiredAttestorsData ? Number(minRequiredAttestorsData) : 3;
+
     // Read stake data for claims
     const { data: claimStakesData } = useReadContracts({
         contracts: claimIndexes.map(id => ({
@@ -141,6 +151,32 @@ export default function InvestorPage() {
         query: { enabled: claimIndexes.length > 0 }
     });
 
+    // Read attestor count for claims
+    const { data: attestorCountData } = useReadContracts({
+        contracts: claimIndexes.map(id => ({
+            address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
+            abi: CONTRACTS.AttestorRegistry.abi as Abi,
+            functionName: 'attestorCountPerClaim',
+            args: [BigInt(id)]
+        })),
+        query: { enabled: claimIndexes.length > 0 }
+    });
+
+    // Read claimed status for claims
+    const { data: claimsClaimedData, refetch: refetchClaimedData } = useReadContracts({
+        contracts: claimIndexes.map(id => ({
+            address: CONTRACTS.YieldVault.address as `0x${string}`,
+            abi: CONTRACTS.YieldVault.abi as Abi,
+            functionName: 'isClaimed',
+            args: [BigInt(id)]
+        })),
+        query: { enabled: claimIndexes.length > 0 }
+    });
+
+    // Calculate balances for share calculations
+    const userBalanceEth = userBalance ? Number(formatEther(userBalance as bigint)) : 0;
+    const totalDepositsEth = totalDeposits ? Number(formatEther(totalDeposits as bigint)) : 0;
+
     // Process claims data into active disclosures
     const activeDisclosures = (claimsData?.map((claimResult, index) => {
         if (!claimResult.result) return null;
@@ -148,14 +184,25 @@ export default function InvestorPage() {
         const claim = claimResult.result as any[];
         const stakeResult = claimStakesData?.[index];
         const totalStake = stakeResult?.result ? Number(formatEther(stakeResult.result as bigint)) : 0;
+        const attestorCountResult = attestorCountData?.[index];
+        const attestorCount = attestorCountResult?.result ? Number(attestorCountResult.result) : 0;
+        const yieldAmount = Number(formatUnits(claim[3], 18)) || 0;
+        const claimedResult = claimsClaimedData?.[index];
+        const isClaimed = claimedResult?.result ? Boolean(claimedResult.result) : false;
 
-        // Determine status based on claim status and stake
+        // Calculate user's share based on their proportion of total deposits
+        const userSharePercentage = totalDepositsEth > 0 ? (userBalanceEth / totalDepositsEth) * 100 : 0;
+        const yourShareAmount = totalDepositsEth > 0 ? (userBalanceEth / totalDepositsEth) * yieldAmount : 0;
+
+        // Determine status based on claim status and attestor count
         let status = 'submitted';
         let attestationProgress = 0;
 
         if (claim[6] === 1) { // ClaimStatus.Attested
             status = 'attesting';
-            attestationProgress = Math.min(100, (totalStake / 0.1) * 100); // Assuming 0.1 ETH minimum
+            // Calculate progress based on attestor count, cap at 99% (never show 100% until Approved)
+            const rawProgress = (attestorCount / minRequiredAttestors) * 100;
+            attestationProgress = Math.min(99, rawProgress);
         } else if (claim[6] === 2) { // ClaimStatus.Approved
             status = 'verified';
             attestationProgress = 100;
@@ -165,11 +212,13 @@ export default function InvestorPage() {
             id: `disc-${claim[0]}`,
             assetId: claim[1] || 'MNT-Asset',
             period: claim[2] || 'Verified Period',
-            yieldAmount: Number(formatUnits(claim[3], 18)) || 0,
+            yieldAmount,
             status,
             attestationProgress,
             totalStake,
-            yourShare: totalStake * 0.1, // Simplified calculation
+            yourShare: yourShareAmount,
+            yourSharePercentage: userSharePercentage,
+            isClaimed,
             proofHash: claim[4] ? `${claim[4].slice(0, 16)}...` : '0x997d8ca1388c...'
         };
     }).filter((d): d is NonNullable<typeof d> => d !== null)) || [];
@@ -218,9 +267,6 @@ export default function InvestorPage() {
         });
 
     // Calculate vault metrics
-    const userBalanceEth = userBalance ? Number(formatEther(userBalance as bigint)) : 0;
-    const totalDepositsEth = totalDeposits ? Number(formatEther(totalDeposits as bigint)) : 0;
-
     const vaultMetrics = {
         principalEscrow: userBalanceEth,
         verifiedDistribution: 0, // This would need additional contract logic
@@ -232,8 +278,9 @@ export default function InvestorPage() {
     useEffect(() => {
         if (isConfirmed) {
             refetchBalance();
+            refetchClaimedData();
         }
-    }, [isConfirmed, refetchBalance]);
+    }, [isConfirmed, refetchBalance, refetchClaimedData]);
 
     const handleDeposit = async () => {
         if (!isConnected) {
@@ -716,28 +763,33 @@ export default function InvestorPage() {
                                                 <span className="text-white font-medium">{disclosure.assetId}</span>
                                             </div>
                                             <div className="flex items-center gap-3">
-                                                <div className="text-right">
-                                                    <div className="text-sm text-slate-400">Your Share to 99%</div>
-                                                    <div className="text-lg font-semibold text-white">
-                                                        {disclosure.yourShare.toFixed(4)} MNT
-                                                    </div>
-                                                </div>
                                                 {disclosure.status === 'verified' && (
-                                                    <Button
-                                                        size="sm"
-                                                        onClick={() => handleClaimYield(disclosure.id)}
-                                                        disabled={isWritePending || isConfirming || !isConnected}
-                                                        className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white"
-                                                    >
-                                                        {isWritePending || isConfirming ? (
-                                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                                        ) : (
-                                                            <>
-                                                                <Coins className="w-4 h-4 mr-1" />
-                                                                Claim
-                                                            </>
-                                                        )}
-                                                    </Button>
+                                                    disclosure.isClaimed ? (
+                                                        <Button
+                                                            size="sm"
+                                                            disabled
+                                                            className="bg-slate-600 text-slate-400 cursor-not-allowed"
+                                                        >
+                                                            <CheckCircle2 className="w-4 h-4 mr-1" />
+                                                            Claimed
+                                                        </Button>
+                                                    ) : (
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={() => handleClaimYield(disclosure.id)}
+                                                            disabled={isWritePending || isConfirming || !isConnected}
+                                                            className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white"
+                                                        >
+                                                            {isWritePending || isConfirming ? (
+                                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                            ) : (
+                                                                <>
+                                                                    <Coins className="w-4 h-4 mr-1" />
+                                                                    Claim
+                                                                </>
+                                                            )}
+                                                        </Button>
+                                                    )
                                                 )}
                                             </div>
                                         </div>
@@ -759,7 +811,9 @@ export default function InvestorPage() {
                                             <div>
                                                 <div className="text-xs text-slate-500">Status</div>
                                                 <div className="text-sm text-slate-300">
-                                                    {disclosure.status === 'attesting' ? `${disclosure.attestationProgress}% Verified` : 'Verified'}
+                                                    {disclosure.status === 'verified' ? 'Verified' :
+                                                     disclosure.status === 'attesting' ? `${disclosure.attestationProgress.toFixed(0)}% Complete` :
+                                                     'Pending'}
                                                 </div>
                                             </div>
                                         </div>
@@ -768,7 +822,7 @@ export default function InvestorPage() {
                                             <div className="mb-3">
                                                 <div className="flex justify-between text-xs text-slate-400 mb-1">
                                                     <span>Verification Progress</span>
-                                                    <span>{disclosure.attestationProgress}%</span>
+                                                    <span>{disclosure.attestationProgress.toFixed(0)}%</span>
                                                 </div>
                                                 <div className="w-full bg-slate-700 rounded-full h-2">
                                                     <div
@@ -781,10 +835,6 @@ export default function InvestorPage() {
 
                                         <div className="flex items-center justify-between text-xs text-slate-500">
                                             <span>Total Stake: {disclosure.totalStake} MNT</span>
-                                            <div className="flex items-center gap-1">
-                                                <span className="font-mono">{disclosure.proofHash}</span>
-                                                <ExternalLink className="w-3 h-3" />
-                                            </div>
                                         </div>
                                     </div>
                                 ))
