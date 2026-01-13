@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Providers from "@/app/providers";
 import { ContractGuardrail } from "@/components/ContractGuardrail";
+import { TestnetNotice } from "@/components/ui/TestnetNotice";
 
 const inter = Inter({ 
     subsets: ["latin"],
@@ -33,6 +34,7 @@ export default function RootLayout({
             <body className={`${inter.className} antialiased bg-slate-950 text-white`}>
                 <Providers>
                     <ContractGuardrail />
+                    <TestnetNotice />
                     <div className="relative flex min-h-screen flex-col">
                         <Navbar />
                         <main className="flex-1">

@@ -36,7 +36,7 @@ import {
     RefreshCw
 } from 'lucide-react';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useReadContracts } from 'wagmi';
-import { formatEther, parseEther, type Abi } from 'viem';
+import { formatEther, parseEther, formatUnits, type Abi } from 'viem';
 import { CONTRACTS } from '@/app/config/contracts';
 
 // Types
@@ -165,7 +165,7 @@ export default function InvestorPage() {
             id: `disc-${claim[0]}`,
             assetId: claim[1] || 'MNT-Asset',
             period: claim[2] || 'Verified Period',
-            yieldAmount: Number(claim[3]) || 0,
+            yieldAmount: Number(formatUnits(claim[3], 18)) || 0,
             status,
             attestationProgress,
             totalStake,
@@ -749,7 +749,12 @@ export default function InvestorPage() {
                                             </div>
                                             <div>
                                                 <div className="text-xs text-slate-500">Yield</div>
-                                                <div className="text-sm text-slate-300">{disclosure.yieldAmount} MNT</div>
+                                                <div className="text-sm text-slate-300">
+                                                    {disclosure.yieldAmount.toLocaleString(undefined, {
+                                                        minimumFractionDigits: 0,
+                                                        maximumFractionDigits: 6
+                                                    })} MNT
+                                                </div>
                                             </div>
                                             <div>
                                                 <div className="text-xs text-slate-500">Status</div>
