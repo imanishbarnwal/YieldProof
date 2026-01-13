@@ -1,14 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Poppins } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Providers from "@/app/providers";
 import { ContractGuardrail } from "@/components/ContractGuardrail";
 
-const poppins = Poppins({ 
+const inter = Inter({ 
     subsets: ["latin"],
-    weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
-    variable: "--font-poppins",
+    variable: "--font-inter",
     display: 'swap', // Optimize font loading
 });
 
@@ -31,12 +30,12 @@ export default function RootLayout({
 }) {
     return (
         <html lang="en" className="dark">
-            <body className={`${poppins.variable} font-sans antialiased`}>
+            <body className={`${inter.className} antialiased bg-slate-950 text-white`}>
                 <Providers>
                     <ContractGuardrail />
                     <div className="relative flex min-h-screen flex-col">
                         <Navbar />
-                        <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
+                        <main className="flex-1">
                             {children}
                         </main>
                     </div>

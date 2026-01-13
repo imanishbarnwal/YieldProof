@@ -3,16 +3,38 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { NetworkWarning } from '@/components/NetworkWarning';
-import { useRequireWalletAndNetwork } from '@/hooks/useRequireWalletAndNetwork';
-import { StatusBadge } from '@/components/ui/StatusBadge';
-import { Skeleton } from '@/components/ui/Skeleton';
-import { UserCheck, ShieldCheck, ExternalLink, Loader2, Flag } from 'lucide-react';
-import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useReadContracts, useChainId } from 'wagmi';
+import { Input } from '@/components/ui/Input';
+import { Badge } from '@/components/ui/Badge';
+import { AnimatedSection, StaggeredContainer } from '@/components/ui/AnimatedSection';
+import { 
+    ShieldCheck, 
+    ExternalLink, 
+    Loader2, 
+    Flag, 
+    UserCheck, 
+    TrendingUp,
+    Award,
+    Eye,
+    Clock,
+    CheckCircle2,
+    AlertTriangle,
+    FileText,
+    Coins,
+    Activity,
+    Target,
+    Star,
+    Zap,
+    BarChart3,
+    DollarSign,
+    Info,
+    RefreshCw,
+    Plus
+} from 'lucide-react';
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useReadContracts } from 'wagmi';
 import { formatEther, parseEther, formatUnits, type Abi } from 'viem';
 import { CONTRACTS } from '@/app/config/contracts';
 
-// Data types
+// Enhanced data types
 interface Claim {
     id: number;
     assetId: string;
@@ -23,52 +45,67 @@ interface Claim {
     alreadyAttested?: boolean;
     currentBacking?: string;
     attestors?: string[];
+    issuer?: string;
+    submittedAt?: Date;
+    attestorCount?: number;
+    requiredAttestors?: number;
 }
 
+interface AttestorStats {
+    totalAttestations: number;
+    successfulAttestations: number;
+    trustScore: number;
+    totalStaked: number;
+    rewardsEarned: number;
+    accuracyRate: number;
+}
 export default function AttestorPage() {
-    const { isReady, address } = useRequireWalletAndNetwork();
-    const chainId = useChainId();
-    const [stakeAmountInput, setStakeAmountInput] = useState("1.0");
+    const { address, isConnected } = useAccount();
+    const [stakeAmount, setStakeAmount] = useState('1.0');
+    const [selectedTab, setSelectedTab] = useState<'pending' | 'attested' | 'history'>('pending');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [gasPrice, setGasPrice] = useState<string>('');
+    const [showAdvanced, setShowAdvanced] = useState(false);
 
-    // Section State Variables
-    const [readyToVerifyClaims, setReadyToVerifyClaims] = useState<Claim[]>([]);
-    const [attestedByMeClaims, setAttestedByMeClaims] = useState<Claim[]>([]);
-    const [attestationHistoryClaims, setAttestationHistoryClaims] = useState<Claim[]>([]);
-    const [allClaimsDebug, setAllClaimsDebug] = useState<Claim[]>([]);
-
-    const [myStats, setMyStats] = useState({ totalAttestations: 0, trustScore: 0 });
+    // State for different claim categories
+    const [pendingClaims, setPendingClaims] = useState<Claim[]>([]);
+    const [attestedClaims, setAttestedClaims] = useState<Claim[]>([]);
+    const [historyClaims, setHistoryClaims] = useState<Claim[]>([]);
+    const [attestorStats, setAttestorStats] = useState<AttestorStats>({
+        totalAttestations: 0,
+        successfulAttestations: 0,
+        trustScore: 0,
+        totalStaked: 0,
+        rewardsEarned: 0,
+        accuracyRate: 0
+    });
 
     // Contract Write Hook
     const { writeContract, data: hash, isPending: isWritePending } = useWriteContract();
     const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
 
-    // Read: Attestor Info (isRegistered, stake)
+    // Read attestor info
     const { data: attestorInfo, refetch: refetchAttestor } = useReadContract({
         address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
         abi: CONTRACTS.AttestorRegistry.abi as Abi,
         functionName: 'attestors',
         args: [address],
-        query: {
-            enabled: !!address,
-            refetchInterval: 5000,
-        }
+        query: { enabled: !!address, refetchInterval: 5000 }
     });
 
-    const isAttestorInfoLoading = attestorInfo === undefined && address !== undefined;
     const isRegistered = attestorInfo ? (attestorInfo as any)[0] : false;
     const currentStakeWei = attestorInfo ? (attestorInfo as any)[1] : BigInt(0);
     const currentStake = formatEther(currentStakeWei as bigint);
 
-    // Read: Constants from YieldProof
+    // Read constants
     const { data: minAttestorsData } = useReadContract({
         address: CONTRACTS.YieldProof.address as `0x${string}`,
         abi: CONTRACTS.YieldProof.abi as Abi,
         functionName: 'MIN_REQUIRED_ATTESTORS',
     });
 
-    const minAttestors = minAttestorsData ? Number(minAttestorsData) : 0;
-
-    // Read: Total Claims count
+    const minAttestors = minAttestorsData ? Number(minAttestorsData) : 3;
+    // Read total claims
     const { data: totalClaimsData, refetch: refetchTotalClaims } = useReadContract({
         address: CONTRACTS.YieldProof.address as `0x${string}`,
         abi: CONTRACTS.YieldProof.abi as Abi,
@@ -76,11 +113,9 @@ export default function AttestorPage() {
     });
 
     const totalClaims = totalClaimsData ? Number(totalClaimsData) : 0;
-    const threshold = minAttestors > 0 ? minAttestors : "Loading..."; // For debug panel
-    // FIX: IDs start at 0 in YieldProof.sol, so array should be 0..totalClaims-1
     const claimIndexes = Array.from({ length: totalClaims }, (_, i) => BigInt(i));
 
-    // Read: Individual Claims Data
+    // Read claims data
     const { data: claimsData, refetch: refetchClaims } = useReadContracts({
         contracts: claimIndexes.map(id => ({
             address: CONTRACTS.YieldProof.address as `0x${string}`,
@@ -88,25 +123,10 @@ export default function AttestorPage() {
             functionName: 'claims',
             args: [id],
         })),
-        query: {
-            refetchInterval: 5000,
-        }
+        query: { refetchInterval: 5000 }
     });
 
-    // Read: Current Total Stake per Claim
-    const { data: claimStakesData, refetch: refetchClaimStakes } = useReadContracts({
-        contracts: claimIndexes.map(id => ({
-            address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
-            abi: CONTRACTS.AttestorRegistry.abi as Abi,
-            functionName: 'totalStakePerClaim',
-            args: [id],
-        })),
-        query: {
-            refetchInterval: 5000,
-        }
-    });
-
-    // Read: Check if user has already attested each claim
+    // Read attestation status
     const { data: hasAttestedData, refetch: refetchHasAttested } = useReadContracts({
         contracts: claimIndexes.map(id => ({
             address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
@@ -114,13 +134,22 @@ export default function AttestorPage() {
             functionName: 'hasAttested',
             args: [id, address],
         })),
-        query: {
-            refetchInterval: 5000,
-        }
+        query: { refetchInterval: 5000 }
     });
 
-    // Read: Attestor Count per Claim (for consistency check)
-    const { data: attestorCountsData, refetch: refetchAttestorCounts } = useReadContracts({
+    // Read stake amounts per claim
+    const { data: claimStakesData, refetch: refetchClaimStakes } = useReadContracts({
+        contracts: claimIndexes.map(id => ({
+            address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
+            abi: CONTRACTS.AttestorRegistry.abi as Abi,
+            functionName: 'totalStakePerClaim',
+            args: [id],
+        })),
+        query: { refetchInterval: 5000 }
+    });
+
+    // Read attestor counts
+    const { data: attestorCountsData } = useReadContracts({
         contracts: claimIndexes.map(id => ({
             address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
             abi: CONTRACTS.AttestorRegistry.abi as Abi,
@@ -130,113 +159,70 @@ export default function AttestorPage() {
         query: { refetchInterval: 5000 }
     });
 
-    // Read: Attestors List per Claim (DEBUG & Display)
-    const { data: attestorsListData, refetch: refetchAttestorsList } = useReadContracts({
-        contracts: claimIndexes.map(id => ({
-            address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
-            abi: CONTRACTS.AttestorRegistry.abi as Abi,
-            functionName: 'getAttestors',
-            args: [id],
-        })),
-        query: {
-            refetchInterval: 5000,
-        }
-    });
-
-    const isClaimsLoading = !claimsData || !claimStakesData || !hasAttestedData || !attestorsListData || !attestorCountsData;
-
-    // Effect: Process and filter claims
+    const isLoading = !claimsData || !hasAttestedData || !claimStakesData || !attestorCountsData;
+    // Process claims data
     useEffect(() => {
-        if (claimsData && hasAttestedData && claimStakesData && attestorsListData && attestorCountsData && address) {
-            let attestedCount = 0;
+        if (claimsData && hasAttestedData && claimStakesData && attestorCountsData && address) {
+            const processedClaims = claimsData.map((result, i) => {
+                const claim = result.result as any;
+                if (!claim) return null;
 
-            const rawClaims = claimsData.map((result, i) => {
-                const c = result.result as any;
-                const hasAttestedResult = hasAttestedData[i];
-                const alreadyAttested = !!(hasAttestedResult?.result);
+                const hasAttested = !!(hasAttestedData[i]?.result);
+                const stakeAmount = claimStakesData[i]?.result ? formatEther(claimStakesData[i].result as bigint) : '0';
+                const attestorCount = attestorCountsData[i]?.result ? Number(attestorCountsData[i].result) : 0;
 
-                const stakeResult = claimStakesData[i];
-                const currentBacking = stakeResult?.result ? formatEther(stakeResult.result as bigint) : '0';
-
-                const attestorsResult = attestorsListData[i];
-                const attestors = attestorsResult?.result ? (attestorsResult.result as string[]) : [];
-
-                const countResult = attestorCountsData[i];
-                const onChainCount = countResult?.result ? Number(countResult.result) : 0;
-
-                // SAFETY CHECK: Consistency
-                if (attestors.length !== onChainCount) {
-                    console.warn(`[INTEGRITY WARN] Claim ID ${i} mismatch: List=${attestors.length}, Count=${onChainCount}`);
-                }
-
-                if (alreadyAttested) attestedCount++;
-
-                if (!c) return null;
-
-                const statusEnum = Number(c[6]);
-                // 0=Submitted, 1=Attesting, 2=Verified, 3=Flagged, 4=Rejected
+                const statusEnum = Number(claim[6]);
                 const statusStr = ['submitted', 'attesting', 'verified', 'flagged', 'rejected'][statusEnum];
 
                 return {
-                    id: Number(c[0]),
-                    assetId: c[1],
-                    period: c[2],
-                    yieldAmount: Number(formatUnits(c[3], 6)),
-                    documentHash: c[4],
+                    id: Number(claim[0]),
+                    assetId: claim[1],
+                    period: claim[2],
+                    yieldAmount: Number(formatUnits(claim[3], 18)), // Convert from wei
+                    documentHash: claim[4],
+                    issuer: claim[5],
                     status: statusStr as any,
-                    alreadyAttested,
-                    currentBacking,
-                    attestors
+                    alreadyAttested: hasAttested,
+                    currentBacking: stakeAmount,
+                    attestorCount,
+                    requiredAttestors: minAttestors,
+                    submittedAt: new Date() // Would need to track this separately
                 };
+            }).filter(Boolean) as Claim[];
+
+            // Filter claims by category
+            const pending = processedClaims.filter(c => 
+                !c.alreadyAttested && (c.status === 'submitted' || c.status === 'attesting')
+            );
+            
+            const attested = processedClaims.filter(c => 
+                c.alreadyAttested && (c.status === 'submitted' || c.status === 'attesting')
+            );
+            
+            const history = processedClaims.filter(c => 
+                c.alreadyAttested && (c.status === 'verified' || c.status === 'flagged' || c.status === 'rejected')
+            );
+
+            setPendingClaims(pending.reverse());
+            setAttestedClaims(attested.reverse());
+            setHistoryClaims(history.reverse());
+
+            // Calculate stats
+            const totalAttestations = attested.length + history.length;
+            const successfulAttestations = history.filter(c => c.status === 'verified').length;
+            const accuracyRate = totalAttestations > 0 ? (successfulAttestations / totalAttestations) * 100 : 0;
+
+            setAttestorStats({
+                totalAttestations,
+                successfulAttestations,
+                trustScore: Math.min(100, totalAttestations * 8 + accuracyRate * 0.2),
+                totalStaked: parseFloat(currentStake),
+                rewardsEarned: successfulAttestations * 0.1, // Mock calculation
+                accuracyRate
             });
-
-            const validClaims = rawClaims.filter(c =>
-                c !== null &&
-                c.assetId &&
-                c.assetId.trim() !== "" &&
-                // Ensure we don't show "empty" zero-initialized structs (though c[1] check covers this mostly)
-                c.yieldAmount !== undefined
-            ) as Claim[];
-
-            // SAFETY CHECK: Data Loss
-            if (totalClaims > 0 && validClaims.length === 0) {
-                console.warn("[DATA WARN] Total claims > 0 but valid claims list is empty. Check ABI or Indexing.");
-            }
-
-            setAllClaimsDebug(validClaims);
-
-            setMyStats({
-                totalAttestations: attestedCount,
-                trustScore: Math.min(100, attestedCount * 10)
-            });
-
-            // 1. READY TO VERIFY
-            // Claims I have NOT attested to yet, that are pending verification
-            const ready = validClaims.filter(c =>
-                !c.alreadyAttested &&
-                (c.status === 'submitted' || c.status === 'attesting')
-            ).reverse();
-            setReadyToVerifyClaims(ready);
-
-            // 2. ATTESTED BY ME (Pending Finalization)
-            // Claims I HAVE attested to, but are not yet Verified/Rejected/Flagged
-            const attestedByMe = validClaims.filter(c =>
-                c.alreadyAttested &&
-                (c.status === 'submitted' || c.status === 'attesting')
-            ).reverse();
-            setAttestedByMeClaims(attestedByMe);
-
-            // 3. ATTESTATION HISTORY
-            // Claims I have attested to that are now resolved (Verified, Flagged, Rejected)
-            const history = validClaims.filter(c =>
-                c.alreadyAttested &&
-                (c.status === 'verified' || c.status === 'flagged' || c.status === 'rejected')
-            ).reverse();
-            setAttestationHistoryClaims(history);
         }
-    }, [claimsData, hasAttestedData, claimStakesData, attestorsListData, attestorCountsData, address, totalClaims]);
-
-    // Effect: Refetch on transaction success
+    }, [claimsData, hasAttestedData, claimStakesData, attestorCountsData, address, currentStake, minAttestors]);
+    // Refetch on transaction success
     useEffect(() => {
         if (isConfirmed) {
             refetchAttestor();
@@ -244,336 +230,595 @@ export default function AttestorPage() {
             refetchHasAttested();
             refetchTotalClaims();
             refetchClaimStakes();
-            refetchAttestorsList();
-            refetchAttestorCounts();
         }
-    }, [isConfirmed, refetchAttestor, refetchClaims, refetchHasAttested, refetchTotalClaims, refetchClaimStakes, refetchAttestorsList, refetchAttestorCounts]);
-
+    }, [isConfirmed, refetchAttestor, refetchClaims, refetchHasAttested, refetchTotalClaims, refetchClaimStakes]);
 
     // Handlers
-    const handleAddStake = async () => {
-        if (!isReady) return;
+    const handleStake = async () => {
+        if (!isConnected || !stakeAmount) return;
+        
         try {
-            const val = parseEther(stakeAmountInput);
+            const value = parseEther(stakeAmount);
+            const gasOptions = gasPrice ? { gasPrice: BigInt(Math.floor(parseFloat(gasPrice) * 1e9)) } : {};
+            
             if (!isRegistered) {
                 writeContract({
                     address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
                     abi: CONTRACTS.AttestorRegistry.abi as Abi,
                     functionName: 'register',
-                    value: val
+                    value,
+                    ...gasOptions
                 });
             } else {
                 writeContract({
                     address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
                     abi: CONTRACTS.AttestorRegistry.abi as Abi,
                     functionName: 'stakeETH',
-                    value: val
+                    value,
+                    ...gasOptions
                 });
             }
-        } catch (e) {
-            console.error("Staking failed:", e);
+        } catch (error) {
+            console.error("Staking failed:", error);
         }
     };
 
     const handleAttest = async (claimId: number) => {
-        if (!isReady) return;
+        if (!isConnected) return;
+        
         try {
+            const gasOptions = gasPrice ? { gasPrice: BigInt(Math.floor(parseFloat(gasPrice) * 1e9)) } : {};
+            
             writeContract({
                 address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
                 abi: CONTRACTS.AttestorRegistry.abi as Abi,
                 functionName: 'attestToClaim',
-                args: [BigInt(claimId)]
+                args: [BigInt(claimId)],
+                ...gasOptions
             });
-        } catch (e) {
-            console.error("Attestation failed:", e);
+        } catch (error) {
+            console.error("Attestation failed:", error);
         }
     };
 
     const handleFlag = async (claimId: number) => {
-        if (!isReady) return;
-        const reason = window.prompt("Why are you flagging this claim? (e.g. 'Duplicate', 'Invalid Data')");
+        if (!isConnected) return;
+        
+        const reason = window.prompt("Why are you flagging this claim?");
         if (!reason) return;
 
         try {
+            const gasOptions = gasPrice ? { gasPrice: BigInt(Math.floor(parseFloat(gasPrice) * 1e9)) } : {};
+            
             writeContract({
                 address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
                 abi: CONTRACTS.AttestorRegistry.abi as Abi,
                 functionName: 'flagClaim',
-                args: [BigInt(claimId), reason]
+                args: [BigInt(claimId), reason],
+                ...gasOptions
             });
-        } catch (e) {
-            console.error("Flagging failed:", e);
+        } catch (error) {
+            console.error("Flagging failed:", error);
         }
+    };
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'submitted': return 'warning';
+            case 'attesting': return 'info';
+            case 'verified': return 'success';
+            case 'flagged': return 'destructive';
+            case 'rejected': return 'destructive';
+            default: return 'default';
+        }
+    };
+
+    const getStatusLabel = (status: string) => {
+        switch (status) {
+            case 'submitted': return 'Awaiting Attestors';
+            case 'attesting': return 'In Verification';
+            case 'verified': return 'Verified';
+            case 'flagged': return 'Flagged';
+            case 'rejected': return 'Rejected';
+            default: return status;
+        }
+    };
+
+    const filteredClaims = () => {
+        let claims: Claim[] = [];
+        switch (selectedTab) {
+            case 'pending': claims = pendingClaims; break;
+            case 'attested': claims = attestedClaims; break;
+            case 'history': claims = historyClaims; break;
+        }
+        
+        if (!searchTerm) return claims;
+        return claims.filter(claim => 
+            claim.assetId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            claim.period.toLowerCase().includes(searchTerm.toLowerCase())
+        );
     };
 
     const isProcessing = isWritePending || isConfirming;
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
-            {/* ... Header and Stats (unchanged) ... */}
-            <div className="flex flex-col gap-2">
-                <h1 className="text-3xl font-bold tracking-tight text-white">Attestor Dashboard</h1>
-                <p className="text-slate-400">Attestor: verifies claims by staking MNT</p>
-                <div className="flex gap-4 mt-2">
-                    <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-900/50 px-3 py-1 rounded-full border border-slate-800">
-                        <span className="w-2 h-2 rounded-full bg-slate-500"></span> Submitted
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-900/50 px-3 py-1 rounded-full border border-slate-800">
-                        <span className="w-2 h-2 rounded-full bg-blue-500"></span> Attesting
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-900/50 px-3 py-1 rounded-full border border-slate-800">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Verified
-                    </div>
-                </div>
-            </div>
-
-            <div className="grid gap-8 lg:grid-cols-12">
-                {/* Sidebar: Staking Stats */}
-                <div className="lg:col-span-4 space-y-6">
-                    <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium text-slate-400">Total Staked (MNT)</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold text-emerald-400">
-                                {isAttestorInfoLoading ? <Skeleton className="h-9 w-32" /> : `${Number(currentStake).toFixed(2)} MNT`}
-                            </div>
-                            <p className="text-xs text-slate-500 mt-1">
-                                {isRegistered ? 'Locked in AttestorRegistry' : 'Register to start attesting.'}
+        <div className="min-h-screen bg-slate-950 text-white">
+            <div className="max-w-7xl mx-auto px-6 py-8">
+                {/* Hero Section */}
+                <AnimatedSection className="mb-12">
+                    <div className="text-center space-y-8 max-w-4xl mx-auto">
+                        <div className="flex items-center justify-center gap-3 mb-6">
+                            <Badge variant={isRegistered ? "success" : "warning"} className="px-4 py-2 text-sm font-medium rounded-full" pulse>
+                                <div className={`w-2 h-2 ${isRegistered ? 'bg-emerald-400' : 'bg-amber-400'} rounded-full mr-2 animate-pulse`} />
+                                {isRegistered ? 'Active Attestor' : 'Registration Required'}
+                            </Badge>
+                            <Badge variant="default" className="px-4 py-2 text-sm font-medium rounded-full">
+                                <Star className="w-3 h-3 mr-1" />
+                                Trust Score: {attestorStats.trustScore.toFixed(0)}
+                            </Badge>
+                        </div>
+                        <div className="space-y-6">
+                            <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-tight font-inter">
+                                Attestor Dashboard
+                            </h1>
+                            <p className="text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed font-light">
+                                Verify yield disclosures and earn rewards through cryptographic attestation and economic consensus.
                             </p>
-                        </CardContent>
-                    </Card>
+                        </div>
 
-                    <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <UserCheck className="h-5 w-5 text-indigo-400" />
-                                Attestor Status
-                            </CardTitle>
-                            <CardDescription>Manage your staking position.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-slate-400">Reputation Score</span>
-                                <span className="font-mono text-white">98/100</span>
+                        {/* Stats Grid */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 max-w-4xl mx-auto">
+                            <div className="text-center space-y-2">
+                                <div className="text-2xl font-bold text-white">{attestorStats.totalStaked.toFixed(2)}</div>
+                                <div className="text-sm text-slate-400">MNT Staked</div>
                             </div>
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-slate-400">Total Attestations</span>
-                                <span className="font-mono text-white">
-                                    {isClaimsLoading ? <Skeleton className="h-5 w-8 inline-block" /> : myStats.totalAttestations}
-                                </span>
+                            <div className="text-center space-y-2">
+                                <div className="text-2xl font-bold text-white">{attestorStats.totalAttestations}</div>
+                                <div className="text-sm text-slate-400">Total Attestations</div>
                             </div>
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-slate-400">Trust Score</span>
-                                <span className="font-mono text-emerald-400">{myStats.trustScore}/100</span>
+                            <div className="text-center space-y-2">
+                                <div className="text-2xl font-bold text-white">{attestorStats.accuracyRate.toFixed(0)}%</div>
+                                <div className="text-sm text-slate-400">Accuracy Rate</div>
                             </div>
+                            <div className="text-center space-y-2">
+                                <div className="text-2xl font-bold text-white">{attestorStats.rewardsEarned.toFixed(2)}</div>
+                                <div className="text-sm text-slate-400">MNT Earned</div>
+                            </div>
+                        </div>
+                    </div>
+                </AnimatedSection>
 
-                            <div className="pt-4 border-t border-slate-800">
-                                <label className="text-xs font-medium text-slate-500 uppercase mb-2 block">Stake Amount (MNT)</label>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="number"
-                                        value={stakeAmountInput}
-                                        onChange={(e) => setStakeAmountInput(e.target.value)}
-                                        className="w-24 bg-slate-950 border border-slate-700 rounded px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                        step="0.1"
-                                        min="0"
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                    {/* Sidebar - Attestor Status & Staking */}
+                    <div className="lg:col-span-1 space-y-6">
+                        <AnimatedSection delay={0.1}>
+                            <Card className="backdrop-blur-xl">
+                                <CardHeader>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
+                                            <ShieldCheck className="w-5 h-5 text-white" />
+                                        </div>
+                                        <div>
+                                            <CardTitle className="text-white">Attestor Status</CardTitle>
+                                            <CardDescription className="text-slate-400">Your verification power</CardDescription>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-6">
+                                    {/* Registration Status */}
+                                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-indigo-500/10 to-purple-500/5 rounded-lg border border-indigo-500/20">
+                                        <div>
+                                            <p className="text-white font-medium">Registration</p>
+                                            <p className="text-slate-400 text-sm">{isRegistered ? 'Active' : 'Required'}</p>
+                                        </div>
+                                        <div className={`w-3 h-3 rounded-full ${isRegistered ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                                    </div>
+
+                                    {/* Current Stake */}
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-slate-400 text-sm">Current Stake</span>
+                                            <span className="text-white font-mono text-lg">{parseFloat(currentStake).toFixed(2)} MNT</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-slate-400 text-sm">Trust Score</span>
+                                            <span className="text-emerald-400 font-mono">{attestorStats.trustScore.toFixed(0)}/100</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Staking Form */}
+                                    <div className="space-y-4 pt-4 border-t border-slate-700">
+                                        <Input
+                                            label="Stake Amount (MNT)"
+                                            type="number"
+                                            value={stakeAmount}
+                                            onChange={(e) => setStakeAmount(e.target.value)}
+                                            placeholder="1.0"
+                                            helperText="Minimum 1.0 MNT required"
+                                            step="0.1"
+                                            min="0"
+                                        />
+
+                                        {/* Advanced Gas Controls */}
+                                        <div className="space-y-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowAdvanced(!showAdvanced)}
+                                                className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
+                                            >
+                                                <span>Advanced Gas Settings</span>
+                                                <svg 
+                                                    className={`w-4 h-4 transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
+                                                    fill="none" 
+                                                    stroke="currentColor" 
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </button>
+
+                                            {showAdvanced && (
+                                                <div className="space-y-3 p-3 bg-slate-800/30 rounded-lg border border-slate-700/50">
+                                                    <Input
+                                                        label="Gas Price (Gwei)"
+                                                        type="number"
+                                                        value={gasPrice}
+                                                        onChange={(e) => setGasPrice(e.target.value)}
+                                                        placeholder="Auto"
+                                                        helperText="Leave empty for automatic gas price. Lower values = cheaper but slower"
+                                                        step="0.1"
+                                                        min="0"
+                                                    />
+                                                    <div className="text-xs text-slate-500 space-y-1">
+                                                        <p>💡 <strong>Gas Tips:</strong></p>
+                                                        <p>• 1-5 Gwei: Very slow, cheapest</p>
+                                                        <p>• 5-15 Gwei: Normal speed</p>
+                                                        <p>• 15+ Gwei: Fast, more expensive</p>
+                                                        <p>• Empty: Auto estimation (recommended)</p>
+                                                        <p className="text-emerald-400">✅ Using automatic gas limits for reliability</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        <Button
+                                            onClick={handleStake}
+                                            disabled={!isConnected || isProcessing || !stakeAmount}
+                                            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium"
+                                        >
+                                            {isProcessing ? (
+                                                <>
+                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                    Processing...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Plus className="mr-2 h-4 w-4" />
+                                                    {isRegistered ? 'Add Stake' : 'Register & Stake'}
+                                                </>
+                                            )}
+                                        </Button>
+                                    </div>
+                                    {!isRegistered && (
+                                        <div className="space-y-3">
+                                            <div className="flex items-start gap-2 p-3 bg-amber-900/20 border border-amber-500/30 rounded-lg">
+                                                <Info className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+                                                <div className="text-xs text-amber-300">
+                                                    <p className="font-medium">Registration Required</p>
+                                                    <p className="text-amber-400/80 mt-1">Stake MNT to become an attestor and start earning rewards.</p>
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Gas Fee Information */}
+                                            <div className="flex items-start gap-2 p-3 bg-emerald-900/20 border border-emerald-500/30 rounded-lg">
+                                                <DollarSign className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
+                                                <div className="text-xs text-emerald-300">
+                                                    <p className="font-medium">Smart Contract Updated!</p>
+                                                    <p className="text-emerald-400/80 mt-1">
+                                                        Added missing functions (flagClaim, attestor tracking). Using automatic gas estimation for better reliability.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </AnimatedSection>
+
+                        {/* Performance Metrics */}
+                        <AnimatedSection delay={0.2}>
+                            <Card className="backdrop-blur-xl">
+                                <CardHeader>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-lg flex items-center justify-center shadow-lg">
+                                            <BarChart3 className="w-5 h-5 text-white" />
+                                        </div>
+                                        <div>
+                                            <CardTitle className="text-white">Performance</CardTitle>
+                                            <CardDescription className="text-slate-400">Your attestation metrics</CardDescription>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-slate-400 text-sm">Success Rate</span>
+                                            <span className="text-emerald-400 font-mono">{attestorStats.accuracyRate.toFixed(1)}%</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-slate-400 text-sm">Verified Claims</span>
+                                            <span className="text-white font-mono">{attestorStats.successfulAttestations}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-slate-400 text-sm">Rewards Earned</span>
+                                            <span className="text-emerald-400 font-mono">{attestorStats.rewardsEarned.toFixed(2)} MNT</span>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Gas Optimization Tips */}
+                                    <div className="pt-4 border-t border-slate-700">
+                                        <div className="text-xs text-slate-500 space-y-1">
+                                            <p className="font-medium text-slate-400">💡 Gas Optimization:</p>
+                                            <p>• Use 1-5 Gwei for cheaper transactions</p>
+                                            <p>• Batch multiple attestations when possible</p>
+                                            <p>• Avoid peak network hours</p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </AnimatedSection>
+                    </div>
+                    {/* Main Content */}
+                    <div className="lg:col-span-3 space-y-8">
+                        {/* Tab Navigation & Search */}
+                        <AnimatedSection delay={0.3}>
+                            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                                <div className="flex bg-slate-800/50 rounded-lg p-1 border border-slate-700/50">
+                                    {[
+                                        { key: 'pending', label: 'Pending Verification', count: pendingClaims.length, icon: Clock },
+                                        { key: 'attested', label: 'Attested', count: attestedClaims.length, icon: Eye },
+                                        { key: 'history', label: 'History', count: historyClaims.length, icon: CheckCircle2 }
+                                    ].map(({ key, label, count, icon: Icon }) => (
+                                        <button
+                                            key={key}
+                                            onClick={() => setSelectedTab(key as any)}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                                                selectedTab === key
+                                                    ? 'bg-indigo-600 text-white shadow-lg'
+                                                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                                            }`}
+                                        >
+                                            <Icon className="w-4 h-4" />
+                                            <span className="hidden sm:inline">{label}</span>
+                                            <Badge variant="secondary" className="ml-1 text-xs">
+                                                {count}
+                                            </Badge>
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <Input
+                                        placeholder="Search claims..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="w-64"
                                     />
                                     <Button
-                                        onClick={handleAddStake}
-                                        disabled={!isReady || isProcessing}
-                                        className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            refetchClaims();
+                                            refetchHasAttested();
+                                            refetchClaimStakes();
+                                        }}
+                                        className="text-slate-400 hover:text-white"
                                     >
-                                        {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : (isRegistered ? '+ Stake More' : 'Register & Stake')}
+                                        <RefreshCw className="w-4 h-4" />
                                     </Button>
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                        </AnimatedSection>
+                        {/* Claims List */}
+                        <AnimatedSection delay={0.4}>
+                            <div className="space-y-4">
+                                {!isConnected ? (
+                                    <Card className="backdrop-blur-xl">
+                                        <CardContent className="text-center py-12">
+                                            <div className="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                <ShieldCheck className="w-8 h-8 text-slate-500" />
+                                            </div>
+                                            <h3 className="text-lg font-medium text-slate-300 mb-2">Connect Your Wallet</h3>
+                                            <p className="text-slate-500 text-sm max-w-sm mx-auto">
+                                                Connect your wallet to view and attest to yield claims.
+                                            </p>
+                                        </CardContent>
+                                    </Card>
+                                ) : isLoading ? (
+                                    <StaggeredContainer className="space-y-4" staggerDelay={0.1}>
+                                        {Array.from({ length: 3 }).map((_, i) => (
+                                            <Card key={i} className="backdrop-blur-xl animate-pulse">
+                                                <CardContent className="p-6">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="space-y-3 flex-1">
+                                                            <div className="h-4 bg-slate-700 rounded w-1/3"></div>
+                                                            <div className="h-3 bg-slate-800 rounded w-1/2"></div>
+                                                            <div className="h-3 bg-slate-800 rounded w-1/4"></div>
+                                                        </div>
+                                                        <div className="h-10 w-24 bg-slate-700 rounded"></div>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        ))}
+                                    </StaggeredContainer>
+                                ) : filteredClaims().length === 0 ? (
+                                    <Card className="backdrop-blur-xl">
+                                        <CardContent className="text-center py-12">
+                                            <div className="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                <FileText className="w-8 h-8 text-slate-500" />
+                                            </div>
+                                            <h3 className="text-lg font-medium text-slate-300 mb-2">
+                                                {selectedTab === 'pending' ? 'No Claims to Verify' : 
+                                                 selectedTab === 'attested' ? 'No Pending Attestations' : 
+                                                 'No Attestation History'}
+                                            </h3>
+                                            <p className="text-slate-500 text-sm max-w-sm mx-auto">
+                                                {selectedTab === 'pending' ? 'All claims have been verified or no new claims are available.' :
+                                                 selectedTab === 'attested' ? 'You have no pending attestations waiting for finalization.' :
+                                                 'You haven\'t completed any attestations yet.'}
+                                            </p>
+                                        </CardContent>
+                                    </Card>
+                                ) : (
+                                    <StaggeredContainer className="space-y-4" staggerDelay={0.1}>
+                                        {filteredClaims().map((claim) => (
+                                            <Card key={claim.id} className="backdrop-blur-xl hover:bg-slate-800/30 transition-all duration-300">
+                                                <CardContent className="p-6">
+                                                    <div className="flex items-start justify-between">
+                                                        <div className="flex-1 space-y-4">
+                                                            {/* Header */}
+                                                            <div className="flex items-start justify-between">
+                                                                <div>
+                                                                    <div className="flex items-center gap-3 mb-2">
+                                                                        <h3 className="text-lg font-semibold text-white">{claim.assetId}</h3>
+                                                                        <Badge variant={getStatusColor(claim.status) as any}>
+                                                                            {getStatusLabel(claim.status)}
+                                                                        </Badge>
+                                                                    </div>
+                                                                    <p className="text-slate-400 text-sm">Period: {claim.period}</p>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <p className="text-2xl font-bold text-emerald-400">
+                                                                        {claim.yieldAmount.toLocaleString(undefined, {
+                                                                            minimumFractionDigits: 0,
+                                                                            maximumFractionDigits: 6
+                                                                        })} MNT
+                                                                    </p>
+                                                                    <p className="text-slate-500 text-sm">Claimed Yield</p>
+                                                                </div>
+                                                            </div>
 
-                {/* Main Content Areas */}
-                <div className="lg:col-span-8 space-y-10">
-                    <NetworkWarning />
+                                                            {/* Metrics */}
+                                                            <div className="grid grid-cols-3 gap-4">
+                                                                <div className="text-center p-3 bg-slate-800/30 rounded-lg">
+                                                                    <p className="text-slate-400 text-xs">Attestors</p>
+                                                                    <p className="text-white font-mono">
+                                                                        {claim.attestorCount}/{claim.requiredAttestors}
+                                                                    </p>
+                                                                </div>
+                                                                <div className="text-center p-3 bg-slate-800/30 rounded-lg">
+                                                                    <p className="text-slate-400 text-xs">Total Stake</p>
+                                                                    <p className="text-white font-mono">
+                                                                        {parseFloat(claim.currentBacking || '0').toFixed(2)} MNT
+                                                                    </p>
+                                                                </div>
+                                                                <div className="text-center p-3 bg-slate-800/30 rounded-lg">
+                                                                    <p className="text-slate-400 text-xs">Progress</p>
+                                                                    <p className="text-white font-mono">
+                                                                        {Math.round((claim.attestorCount || 0) / (claim.requiredAttestors || 1) * 100)}%
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            {/* Progress Bar */}
+                                                            <div className="space-y-2">
+                                                                <div className="flex justify-between text-xs text-slate-400">
+                                                                    <span>Attestation Progress</span>
+                                                                    <span>{claim.attestorCount} / {claim.requiredAttestors} required</span>
+                                                                </div>
+                                                                <div className="w-full bg-slate-800 rounded-full h-2">
+                                                                    <div 
+                                                                        className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all duration-500"
+                                                                        style={{ 
+                                                                            width: `${Math.min(100, ((claim.attestorCount || 0) / (claim.requiredAttestors || 1)) * 100)}%` 
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                            </div>
 
-                    {/* 1. READY TO VERIFY */}
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-                                <ShieldCheck className="w-5 h-5 text-indigo-400" />
-                                Ready to Verify
-                            </h2>
-                            <span className="text-xs font-mono text-slate-500 bg-slate-900 px-2 py-1 rounded">
-                                {readyToVerifyClaims.length} Claims
-                            </span>
-                        </div>
+                                                            {/* Document Link */}
+                                                            <div className="flex items-center justify-between pt-2 border-t border-slate-700">
+                                                                <div className="flex items-center gap-2">
+                                                                    <FileText className="w-4 h-4 text-slate-400" />
+                                                                    <span className="text-xs text-slate-500 font-mono">
+                                                                        {claim.documentHash.slice(0, 20)}...
+                                                                    </span>
+                                                                </div>
+                                                                <a
+                                                                    href={claim.documentHash.startsWith('ipfs://')
+                                                                        ? `https://gateway.pinata.cloud/ipfs/${claim.documentHash.replace('ipfs://', '')}`
+                                                                        : '#'}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 text-sm transition-colors"
+                                                                >
+                                                                    <ExternalLink className="w-3 h-3" />
+                                                                    View Proof
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                        {/* Actions */}
+                                                        {selectedTab === 'pending' && (
+                                                            <div className="flex flex-col gap-3 ml-6">
+                                                                <Button
+                                                                    onClick={() => handleAttest(claim.id)}
+                                                                    disabled={!isConnected || isProcessing || parseFloat(currentStake) <= 0}
+                                                                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6"
+                                                                >
+                                                                    {isProcessing ? (
+                                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                                    ) : (
+                                                                        <>
+                                                                            <ShieldCheck className="w-4 h-4 mr-2" />
+                                                                            Attest
+                                                                        </>
+                                                                    )}
+                                                                </Button>
+                                                                
+                                                                <Button
+                                                                    variant="outline"
+                                                                    onClick={() => handleFlag(claim.id)}
+                                                                    disabled={isProcessing}
+                                                                    className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                                                                >
+                                                                    <Flag className="w-4 h-4 mr-2" />
+                                                                    Flag
+                                                                </Button>
+                                                            </div>
+                                                        )}
 
-                        {(!isReady) ? (
-                            <div className="text-slate-500 text-center py-12 border border-dashed border-slate-800 rounded-lg bg-slate-900/20">
-                                <p className="mb-2">Wallet not connected</p>
-                                <p className="text-xs text-slate-600">Please connect your wallet to view pending verifications.</p>
+                                                        {selectedTab === 'attested' && (
+                                                            <div className="flex items-center gap-2 ml-6 text-blue-400">
+                                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                                <span className="text-sm font-medium">Verifying...</span>
+                                                            </div>
+                                                        )}
+
+                                                        {selectedTab === 'history' && (
+                                                            <div className="flex items-center gap-2 ml-6 text-emerald-400">
+                                                                <CheckCircle2 className="w-4 h-4" />
+                                                                <span className="text-sm font-medium">Completed</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    {/* Warning for insufficient stake */}
+                                                    {selectedTab === 'pending' && parseFloat(currentStake) <= 0 && (
+                                                        <div className="mt-4 flex items-start gap-2 p-3 bg-amber-900/20 border border-amber-500/30 rounded-lg">
+                                                            <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+                                                            <div className="text-xs text-amber-300">
+                                                                <p className="font-medium">Insufficient Stake</p>
+                                                                <p className="text-amber-400/80 mt-1">You must stake MNT to attest to claims.</p>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </CardContent>
+                                            </Card>
+                                        ))}
+                                    </StaggeredContainer>
+                                )}
                             </div>
-                        ) : isClaimsLoading ? (
-                            Array.from({ length: 2 }).map((_, i) => (
-                                <div key={i} className="p-6 border border-slate-800 bg-slate-900/20 rounded-lg space-y-4">
-                                    <Skeleton className="h-6 w-48" />
-                                    <Skeleton className="h-4 w-full" />
-                                </div>
-                            ))
-                        ) : readyToVerifyClaims.length === 0 ? (
-                            <div className="text-slate-500 text-center py-8 border border-dashed border-slate-800 rounded-lg">
-                                <p className="text-sm">No new claims to verify.</p>
-                            </div>
-                        ) : (
-                            readyToVerifyClaims.map((claim) => (
-                                <Card key={claim.id} className="border-slate-800 bg-slate-900/40 hover:bg-slate-900/60 transition-colors">
-                                    <div className="flex items-center justify-between p-6">
-                                        <div className="grid gap-1">
-                                            <div className="flex items-center gap-2">
-                                                <h3 className="font-semibold text-white">{claim.assetId}</h3>
-                                                <StatusBadge
-                                                    status={claim.status}
-                                                    label={
-                                                        claim.status === 'submitted' ? 'Awaiting Attestors' :
-                                                            claim.status === 'attesting' ? 'In Verification' : undefined
-                                                    }
-                                                />
-                                            </div>
-                                            <div className="text-sm text-slate-400">
-                                                Period: {claim.period} • Yield: <span className="text-emerald-400">{claim.yieldAmount.toLocaleString()} USDC</span>
-                                            </div>
-                                            <div className="flex flex-col gap-1 mt-1">
-                                                <a
-                                                    href={claim.documentHash.startsWith('ipfs://')
-                                                        ? `https://gateway.pinata.cloud/ipfs/${claim.documentHash.replace('ipfs://', '')}`
-                                                        : '#'}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center text-xs text-indigo-400 hover:text-indigo-300 group"
-                                                >
-                                                    <ExternalLink className="mr-1 h-3 w-3" />
-                                                    View Proof
-                                                </a>
-                                                <span className="text-[10px] text-slate-500">MVP: Proofs are public. Encrypted proofs & ZK verification coming in V2.</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center gap-3">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="border-red-900/30 text-red-500/70 hover:bg-red-950/30 hover:text-red-400"
-                                                onClick={() => handleFlag(claim.id)}
-                                                disabled={isProcessing}
-                                            >
-                                                <Flag className="w-4 h-4" />
-                                            </Button>
-
-                                            <Button
-                                                onClick={() => handleAttest(claim.id)}
-                                                disabled={!isReady || isProcessing || Number(currentStake) <= 0}
-                                                className="bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-900/20 disabled:opacity-50"
-                                            >
-                                                {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : (
-                                                    <>
-                                                        <ShieldCheck className="mr-2 h-4 w-4" />
-                                                        Attest
-                                                    </>
-                                                )}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                    {Number(currentStake) <= 0 && (
-                                        <div className="bg-amber-900/20 px-6 py-2 text-xs text-amber-500 border-t border-amber-900/30">
-                                            ⚠️ You must have staked MNT to attest.
-                                        </div>
-                                    )}
-                                </Card>
-                            ))
-                        )}
-                    </div>
-
-                    {/* 2. ATTESTED BY ME */}
-                    <div className="space-y-4 pt-6 border-t border-slate-800">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-                                <Loader2 className="w-5 h-5 text-blue-400" />
-                                Attested By Me <span className="text-slate-500 text-sm font-normal">(Pending Finalization)</span>
-                            </h2>
-                            <span className="text-xs font-mono text-slate-500 bg-slate-900 px-2 py-1 rounded">
-                                {attestedByMeClaims.length} Claims
-                            </span>
-                        </div>
-
-                        {attestedByMeClaims.length === 0 ? (
-                            <div className="text-slate-500 text-sm italic py-4">No pending attestations.</div>
-                        ) : (
-                            attestedByMeClaims.map((claim) => (
-                                <Card key={claim.id} className="border-slate-800 bg-slate-900/20 opacity-90 hover:opacity-100 transition-opacity">
-                                    <div className="flex items-center justify-between p-6">
-                                        <div className="grid gap-1">
-                                            <div className="flex items-center gap-2">
-                                                <h3 className="font-semibold text-slate-300">{claim.assetId}</h3>
-                                                <StatusBadge
-                                                    status={claim.status}
-                                                    label={
-                                                        claim.status === 'submitted' ? 'Awaiting Attestors' :
-                                                            claim.status === 'attesting' ? 'In Verification' : undefined
-                                                    }
-                                                />
-                                            </div>
-                                            <div className="text-sm text-slate-500">
-                                                Period: {claim.period} • Yield: {claim.yieldAmount.toLocaleString()} USDC
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-sm text-blue-400">
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                            Verifying...
-                                        </div>
-                                    </div>
-                                </Card>
-                            ))
-                        )}
-                    </div>
-
-                    {/* 3. ATTESTATION HISTORY */}
-                    <div className="space-y-4 pt-6 border-t border-slate-800">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-                                <UserCheck className="w-5 h-5 text-emerald-400" />
-                                Attestation History <span className="text-slate-500 text-sm font-normal">(Verified)</span>
-                            </h2>
-                            <span className="text-xs font-mono text-slate-500 bg-slate-900 px-2 py-1 rounded">
-                                {attestationHistoryClaims.length} Claims
-                            </span>
-                        </div>
-
-                        {attestationHistoryClaims.length === 0 ? (
-                            <div className="text-slate-500 text-sm italic py-4">No verified history yet.</div>
-                        ) : (
-                            attestationHistoryClaims.map((claim) => (
-                                <Card key={claim.id} className="border-slate-800 bg-slate-900/40">
-                                    <div className="flex items-center justify-between p-6">
-                                        <div className="grid gap-1">
-                                            <div className="flex items-center gap-2">
-                                                <h3 className="font-semibold text-slate-300">{claim.assetId}</h3>
-                                                <StatusBadge status="verified" />
-                                            </div>
-                                            <div className="text-sm text-slate-500">
-                                                Period: {claim.period} • My Stake: <span className="text-slate-400">{Number(currentStake).toFixed(2)} MNT</span>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-sm text-emerald-500 font-medium">
-                                            <ShieldCheck className="w-4 h-4" />
-                                            Verified
-                                        </div>
-                                    </div>
-                                </Card>
-                            ))
-                        )}
+                        </AnimatedSection>
                     </div>
                 </div>
             </div>
-        </div >
+        </div>
     );
 }

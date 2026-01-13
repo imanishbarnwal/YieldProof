@@ -48,6 +48,9 @@ contract YieldProof {
     /// @notice Reference to the AttestorRegistry contract.
     AttestorRegistry public attestorRegistry;
 
+    /// @notice Minimum required attestors for verification.
+    uint256 public constant MIN_REQUIRED_ATTESTORS = 3;
+
     // ============================
     // Events
     // ============================

@@ -8,25 +8,25 @@ import { Loader2 } from "lucide-react"
 import { motion, HTMLMotionProps } from "framer-motion"
 
 const buttonVariants = cva(
-    "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium ring-offset-background transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 tracking-wide relative overflow-hidden group",
+    "inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 tracking-wide relative overflow-hidden group",
     {
         variants: {
             variant: {
-                default: "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/40 hover:from-indigo-500 hover:to-indigo-600",
-                primary: "bg-gradient-to-r from-slate-100 to-white text-slate-900 shadow-lg shadow-slate-500/25 hover:shadow-xl hover:shadow-slate-500/40 font-medium",
-                secondary: "bg-gradient-to-r from-slate-700 to-slate-800 text-slate-100 shadow-lg shadow-slate-700/25 hover:shadow-xl hover:shadow-slate-700/40 border border-slate-600/50",
-                outline: "border-2 border-indigo-500/50 bg-transparent text-indigo-300 hover:bg-indigo-500/10 hover:border-indigo-400/70 backdrop-blur-sm",
-                ghost: "text-slate-300 hover:bg-slate-800/50 hover:text-white",
-                destructive: "bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/40",
-                success: "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/40",
-                link: "text-indigo-400 underline-offset-4 hover:underline hover:text-indigo-300",
+                default: "bg-slate-800 hover:bg-slate-700 text-white shadow-lg border border-slate-600/50 hover:border-slate-500/50 rounded-xl",
+                primary: "bg-white hover:bg-slate-100 text-slate-900 shadow-lg font-semibold rounded-xl border border-slate-200/50",
+                secondary: "bg-slate-700 hover:bg-slate-600 text-slate-100 shadow-lg border border-slate-600/50 rounded-xl backdrop-blur-sm",
+                outline: "border-2 border-slate-600/50 bg-slate-900/50 text-white hover:bg-slate-800/50 hover:border-slate-500/50 backdrop-blur-sm rounded-xl",
+                ghost: "text-slate-300 hover:bg-slate-800/50 hover:text-white rounded-lg",
+                destructive: "bg-red-700 hover:bg-red-600 text-white shadow-lg rounded-xl border border-red-600/50",
+                success: "bg-emerald-700 hover:bg-emerald-600 text-white shadow-lg rounded-xl border border-emerald-600/50",
+                link: "text-slate-400 underline-offset-4 hover:underline hover:text-slate-300 rounded-lg",
             },
             size: {
-                default: "h-10 px-4 py-2",
-                sm: "h-8 rounded-md px-3 text-xs",
-                lg: "h-12 rounded-lg px-6 text-base",
-                xl: "h-14 rounded-lg px-8 text-lg",
-                icon: "h-10 w-10",
+                default: "h-11 px-6 py-3",
+                sm: "h-9 px-4 py-2 text-xs rounded-lg",
+                lg: "h-13 px-8 py-4 text-base rounded-xl",
+                xl: "h-16 px-10 py-5 text-lg rounded-xl font-semibold",
+                icon: "h-11 w-11 rounded-lg",
             },
         },
         defaultVariants: {
@@ -65,16 +65,16 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
                 disabled={isLoading || props.disabled}
                 whileHover={{ 
                     scale: 1.02,
-                    transition: { duration: 0.2 }
+                    transition: { duration: 0.2, ease: "easeOut" }
                 }}
                 whileTap={{ 
                     scale: 0.98,
-                    transition: { duration: 0.1 }
+                    transition: { duration: 0.1, ease: "easeInOut" }
                 }}
                 {...props}
             >
-                {/* Shimmer effect */}
-                <div className="absolute inset-0 -top-[2px] bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-pulse transition-opacity duration-500" />
+                {/* Subtle shimmer effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
                 
                 <div className="relative z-10 flex items-center justify-center">
                     {isLoading && (

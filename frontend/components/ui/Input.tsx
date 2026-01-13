@@ -8,18 +8,20 @@ export interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string
   error?: string
+  success?: string
   icon?: React.ReactNode
+  helperText?: string
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, label, error, icon, ...props }, ref) => {
+  ({ className, type, label, error, success, icon, helperText, ...props }, ref) => {
     const [isFocused, setIsFocused] = React.useState(false)
     
     return (
       <div className="space-y-2">
         {label && (
           <motion.label 
-            className="text-sm font-medium text-slate-200"
+            className="form-label"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2 }}
@@ -29,45 +31,74 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         )}
         <div className="relative">
           {icon && (
-            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400">
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 z-10">
               {icon}
             </div>
           )}
           <motion.input
             type={type}
             className={cn(
-              "flex h-10 w-full rounded-lg border border-slate-600/50 bg-gradient-to-br from-slate-800/60 to-slate-900/40 backdrop-blur-sm px-3 py-2 text-sm text-white placeholder:text-slate-500 transition-all duration-300 focus:border-indigo-400/70 focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:shadow-lg focus:shadow-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-50",
-              icon && "pl-10",
-              error && "border-red-500/70 focus:border-red-400/70 focus:ring-red-400/30 focus:shadow-red-500/20",
+              "form-input",
+              "flex h-12 w-full rounded-lg border bg-slate-800/50 backdrop-blur-sm px-4 py-3 text-white placeholder:text-slate-400 transition-all duration-200",
+              "border-slate-700/50 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20",
+              "hover:border-slate-600/50 hover:bg-slate-800/70",
+              "disabled:cursor-not-allowed disabled:opacity-50",
+              icon && "pl-11",
+              error && "border-red-500/70 focus:border-red-400/70 focus:ring-red-400/30",
+              success && "border-emerald-500/70 focus:border-emerald-400/70 focus:ring-emerald-400/30",
               className
             )}
             ref={ref}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            whileFocus={{ scale: 1.01 }}
-            transition={{ duration: 0.2 }}
+            whileFocus={{ scale: 1.005 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
             {...props}
           />
-          {/* Focus glow effect */}
+          
+          {/* Enhanced focus glow effect */}
           {isFocused && (
             <motion.div
-              className="absolute inset-0 rounded-lg bg-gradient-to-r from-indigo-500/10 to-purple-500/10 -z-10 blur-xl"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
+              className={cn(
+                "absolute inset-0 rounded-lg -z-10 blur-xl transition-all duration-300",
+                error ? "bg-red-500/10" : success ? "bg-emerald-500/10" : "bg-indigo-500/10"
+              )}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
             />
           )}
         </div>
-        {error && (
-          <motion.p 
-            className="text-sm text-red-400"
-            initial={{ opacity: 0, y: -10 }}
+        
+        {/* Helper text, error, or success message */}
+        {(helperText || error || success) && (
+          <motion.div
+            initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2 }}
+            className="space-y-1"
           >
-            {error}
-          </motion.p>
+            {error && (
+              <p className="form-error flex items-center gap-1">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                {error}
+              </p>
+            )}
+            {success && (
+              <p className="form-success flex items-center gap-1">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                {success}
+              </p>
+            )}
+            {helperText && !error && !success && (
+              <p className="text-slate-400 text-sm">{helperText}</p>
+            )}
+          </motion.div>
         )}
       </div>
     )

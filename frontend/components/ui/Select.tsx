@@ -8,15 +8,19 @@ import { ChevronDown } from "lucide-react"
 export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string
   error?: string
+  success?: string
+  helperText?: string
 }
 
 const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className, label, error, children, ...props }, ref) => {
+  ({ className, label, error, success, helperText, children, ...props }, ref) => {
+    const [isFocused, setIsFocused] = React.useState(false)
+    
     return (
       <div className="space-y-2">
         {label && (
           <motion.label 
-            className="text-sm font-medium text-slate-300"
+            className="form-label"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2 }}
@@ -27,28 +31,79 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         <div className="relative">
           <motion.select
             className={cn(
-              "flex h-10 w-full rounded-lg border border-slate-600 bg-slate-800/50 backdrop-blur-sm px-3 py-2 text-sm text-white transition-colors focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/20 disabled:cursor-not-allowed disabled:opacity-50 appearance-none",
-              error && "border-red-500 focus:border-red-400 focus:ring-red-400/20",
+              "flex h-12 w-full rounded-lg border bg-slate-800/50 backdrop-blur-sm px-4 py-3 text-white transition-all duration-200 appearance-none cursor-pointer",
+              "border-slate-700/50 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none",
+              "hover:border-slate-600/50 hover:bg-slate-800/70",
+              "disabled:cursor-not-allowed disabled:opacity-50",
+              error && "border-red-500/70 focus:border-red-400/70 focus:ring-red-400/30",
+              success && "border-emerald-500/70 focus:border-emerald-400/70 focus:ring-emerald-400/30",
               className
             )}
             ref={ref}
-            whileFocus={{ scale: 1.01 }}
-            transition={{ duration: 0.2 }}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            whileFocus={{ scale: 1.005 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
             {...props}
           >
             {children}
           </motion.select>
-          <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-        </div>
-        {error && (
-          <motion.p 
-            className="text-sm text-red-400"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
+          
+          {/* Custom dropdown arrow */}
+          <motion.div
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none"
+            animate={{ rotate: isFocused ? 180 : 0 }}
             transition={{ duration: 0.2 }}
           >
-            {error}
-          </motion.p>
+            <ChevronDown className={cn(
+              "w-4 h-4 transition-colors duration-200",
+              error ? "text-red-400" : success ? "text-emerald-400" : "text-slate-400"
+            )} />
+          </motion.div>
+          
+          {/* Enhanced focus glow effect */}
+          {isFocused && (
+            <motion.div
+              className={cn(
+                "absolute inset-0 rounded-lg -z-10 blur-xl transition-all duration-300",
+                error ? "bg-red-500/10" : success ? "bg-emerald-500/10" : "bg-indigo-500/10"
+              )}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+            />
+          )}
+        </div>
+        
+        {/* Helper text, error, or success message */}
+        {(helperText || error || success) && (
+          <motion.div
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            className="space-y-1"
+          >
+            {error && (
+              <p className="form-error flex items-center gap-1">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                {error}
+              </p>
+            )}
+            {success && (
+              <p className="form-success flex items-center gap-1">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                {success}
+              </p>
+            )}
+            {helperText && !error && !success && (
+              <p className="text-slate-400 text-sm">{helperText}</p>
+            )}
+          </motion.div>
         )}
       </div>
     )

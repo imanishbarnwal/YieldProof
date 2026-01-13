@@ -26,7 +26,8 @@ import {
     Loader2,
     PieChart,
     BarChart3,
-    DollarSign
+    DollarSign,
+    Star
 } from 'lucide-react';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useReadContracts } from 'wagmi';
 import { formatEther, parseEther, type Abi } from 'viem';
@@ -274,16 +275,29 @@ export default function InvestorPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white p-6">
-            {/* Header */}
-            <AnimatedSection className="mb-8">
-                <div className="flex items-center gap-4 mb-6">
-                    <div className="w-12 h-12 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                        <PieChart className="w-6 h-6 text-white" />
+        <div className="min-h-screen bg-slate-950 text-white">
+            <div className="max-w-7xl mx-auto px-6 py-8">
+            {/* Hero Section */}
+            <AnimatedSection className="mb-12">
+                <div className="text-center space-y-8 max-w-4xl mx-auto">
+                    <div className="flex items-center justify-center gap-3 mb-6">
+                        <Badge variant="success" className="px-4 py-2 text-sm font-medium rounded-full" pulse>
+                            <div className="w-2 h-2 bg-emerald-400 rounded-full mr-2 animate-pulse" />
+                            Beta Vault
+                        </Badge>
+                        <Badge variant="default" className="px-4 py-2 text-sm font-medium rounded-full">
+                            <Star className="w-3 h-3 mr-1" />
+                            Testnet
+                        </Badge>
                     </div>
-                    <div>
-                        <h1 className="text-3xl font-semibold text-white">YieldProof Beta Vault</h1>
-                        <p className="text-slate-400">This environment uses testnet capital at no risk.</p>
+                    
+                    <div className="space-y-6">
+                        <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-tight">
+                            YieldProof Beta Vault
+                        </h1>
+                        <p className="text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed font-light">
+                            This environment uses testnet capital at no risk. Experience transparent yield verification.
+                        </p>
                     </div>
                 </div>
             </AnimatedSection>
@@ -599,6 +613,7 @@ export default function InvestorPage() {
                         </div>
                     </Card>
                 </AnimatedSection>
+            </div>
             </div>
         </div>
     );

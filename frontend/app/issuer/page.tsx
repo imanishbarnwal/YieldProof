@@ -90,6 +90,18 @@ export default function IssuerPage() {
     });
     const [uploadedCid, setUploadedCid] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [dateValidationError, setDateValidationError] = useState<string | null>(null);
+    const [currentDate, setCurrentDate] = useState<string>('');
+
+    // Set current date on client side only
+    useEffect(() => {
+        setCurrentDate(new Date().toISOString().split('T')[0]);
+    }, []);
+
+    // Helper function to get current date (client-side only)
+    const getCurrentDate = () => {
+        return new Date();
+    };
 
     // Contract Write Hook
     const { writeContract, data: hash, isPending: isWritePending } = useWriteContract();
@@ -119,38 +131,70 @@ export default function IssuerPage() {
     // Process claims data into disclosures (filter by user's address)
     useEffect(() => {
         if (claimsData && address) {
+            console.log('Processing claims data:', { claimsData, address, totalClaims });
+            
             const userDisclosures = claimsData
                 .map((claimResult, index) => {
-                    if (!claimResult.result) return null;
+                    if (!claimResult.result) {
+                        console.log(`No result for claim ${index}`);
+                        return null;
+                    }
                     
                     const claim = claimResult.result as any[];
+                    console.log(`Claim ${index}:`, claim);
                     
-                    // Only include claims from current user
-                    if (claim[5].toLowerCase() !== address.toLowerCase()) return null;
+                    // Ensure we have the expected array structure
+                    if (!Array.isArray(claim) || claim.length < 7) {
+                        console.log(`Invalid claim structure for claim ${index}:`, claim);
+                        return null;
+                    }
+                    
+                    // Only include claims from current user (claim[5] is the issuer address)
+                    if (!claim[5] || claim[5].toLowerCase() !== address.toLowerCase()) {
+                        console.log(`Claim ${index} not from current user:`, claim[5], 'vs', address);
+                        return null;
+                    }
                     
                     let status = 'submitted';
                     if (claim[6] === 1) status = 'attesting';
                     else if (claim[6] === 2) status = 'verified';
                     else if (claim[6] === 3) status = 'flagged';
 
-                    return {
+                    // Convert yield amount from wei to readable format
+                    const yieldAmountWei = claim[3] ? BigInt(claim[3]) : BigInt(0);
+                    const yieldAmountEther = parseFloat(formatEther(yieldAmountWei));
+
+                    console.log('Yield amount conversion:', {
+                        raw: claim[3],
+                        wei: yieldAmountWei.toString(),
+                        ether: yieldAmountEther
+                    });
+
+                    const disclosure = {
                         id: `disclosure-${claim[0]}`,
                         vaultName: selectedVault,
                         assetId: claim[1] || 'Unknown Asset',
                         period: claim[2] || 'Unknown Period',
-                        yieldAmount: Number(claim[3]) || 0,
+                        yieldAmount: yieldAmountEther,
                         documentHash: claim[4] || '',
                         status: status as any,
                         currentStake: '0.0', // Would need additional contract call
                         attestorCount: 0, // Would need additional contract call
                         minAttestors: 3,
                         proofHash: `0x${Math.random().toString(16).substr(2, 40)}`,
-                        submittedAt: new Date() // Would need to track this separately
+                        submittedAt: getCurrentDate() // Would need to track this separately
                     };
+
+                    console.log('Processed disclosure:', disclosure);
+                    return disclosure;
                 })
                 .filter(Boolean) as Disclosure[];
             
+            console.log('Final processed user disclosures:', userDisclosures);
             setDisclosures(userDisclosures);
+        } else {
+            console.log('No claims data or address:', { claimsData: !!claimsData, address });
+            setDisclosures([]);
         }
     }, [claimsData, address, selectedVault]);
 
@@ -189,6 +233,42 @@ export default function IssuerPage() {
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+        
+        // Real-time date validation
+        if (name === 'startDate' || name === 'endDate') {
+            const newFormData = { ...formData, [name]: value };
+            validateDates(newFormData.startDate, newFormData.endDate);
+        }
+    };
+
+    const validateDates = (startDateStr: string, endDateStr: string) => {
+        setDateValidationError(null);
+        
+        if (!startDateStr || !endDateStr) {
+            return; // Don't validate until both dates are selected
+        }
+
+        const start = new Date(startDateStr);
+        const end = new Date(endDateStr);
+        const now = getCurrentDate();
+        
+        // Set all dates to midnight for proper comparison (ignore time)
+        const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+        const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+        const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        if (endDate > todayDate) {
+            setDateValidationError(`End date cannot be in the future. Please select a date up to today (${todayDate.toLocaleDateString()}).`);
+            return;
+        }
+
+        if (startDate >= endDate) {
+            setDateValidationError("Start date must be before the end date.");
+            return;
+        }
+
+        // If we get here, dates are valid
+        setDateValidationError(null);
     };
 
     const handleEscrowInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -262,22 +342,56 @@ export default function IssuerPage() {
         }
 
         // Validation
-        const start = new Date(formData.startDate);
-        const end = new Date(formData.endDate);
-        const now = new Date();
-
-        if (end > now) {
-            alert("End date cannot be in the future.");
+        if (!formData.startDate || !formData.endDate) {
+            alert("Please select both start and end dates.");
             return;
         }
 
-        if (start >= end) {
-            alert("Start date must be before end date.");
+        // Check if there are any date validation errors
+        if (dateValidationError) {
+            alert(dateValidationError);
+            return;
+        }
+
+        const start = new Date(formData.startDate);
+        const end = new Date(formData.endDate);
+        const now = getCurrentDate();
+        
+        // Set all dates to midnight for proper comparison (ignore time)
+        const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+        const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+        const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        // Debug logging to help troubleshoot
+        console.log('Date validation:', {
+            startInput: formData.startDate,
+            endInput: formData.endDate,
+            startDate: startDate.toISOString().split('T')[0],
+            endDate: endDate.toISOString().split('T')[0],
+            todayDate: todayDate.toISOString().split('T')[0],
+            endDateAfterToday: endDate > todayDate,
+            startAfterEnd: startDate >= endDate
+        });
+
+        // Double-check validation (should be caught by real-time validation)
+        if (endDate > todayDate) {
+            alert(`End date cannot be in the future. Please select a date up to today (${todayDate.toLocaleDateString()}).`);
+            return;
+        }
+
+        if (startDate >= endDate) {
+            alert("Start date must be before the end date. Please check your date selection.");
             return;
         }
 
         if (!formData.assetId || !formData.yieldAmount || !formData.documentHash) {
-            alert("Please fill in all required fields.");
+            alert("Please fill in all required fields including asset ID, yield amount, and upload a document.");
+            return;
+        }
+
+        const yieldAmount = parseFloat(formData.yieldAmount);
+        if (isNaN(yieldAmount) || yieldAmount <= 0) {
+            alert("Please enter a valid yield amount greater than 0.");
             return;
         }
 
@@ -305,6 +419,7 @@ export default function IssuerPage() {
                 documentHash: ''
             });
             setUploadedCid(null);
+            setDateValidationError(null);
 
         } catch (error) {
             console.error("Submission failed", error);
@@ -365,56 +480,47 @@ export default function IssuerPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-900 text-white p-6">
+        <div className="min-h-screen bg-slate-950 text-white">
+            <div className="max-w-7xl mx-auto px-6 py-8">
             {/* Hero Section */}
             <AnimatedSection className="mb-12">
-                <Card variant="accent" className="p-8">
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="w-12 h-12 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                            <Sparkles className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-3xl font-semibold text-white">
-                                Issuer Dashboard
-                            </h1>
-                            <p className="text-slate-400">Transparent yield disclosure & verification</p>
-                        </div>
+                <div className="text-center space-y-8 max-w-4xl mx-auto">
+                    <div className="flex items-center justify-center gap-3 mb-6">
+                        <Badge variant="success" className="px-4 py-2 text-sm font-medium rounded-full" pulse>
+                            <div className="w-2 h-2 bg-emerald-400 rounded-full mr-2 animate-pulse" />
+                            Live Dashboard
+                        </Badge>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/40 rounded-xl p-4 border border-slate-700/50 backdrop-blur-sm">
-                            <div className="flex items-center gap-3 mb-2">
-                                <BarChart3 className="w-5 h-5 text-indigo-400" />
-                                <span className="text-sm text-slate-400">Total Disclosures</span>
-                            </div>
-                            <div className="text-2xl font-semibold text-white">{vaultMetrics.totalDisclosures}</div>
+                    <div className="space-y-6">
+                        <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-tight">
+                            Issuer Dashboard
+                        </h1>
+                        <p className="text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed font-light">
+                            Submit transparent yield disclosures and build institutional trust through cryptographic verification.
+                        </p>
+                    </div>
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 max-w-4xl mx-auto">
+                        <div className="text-center space-y-2">
+                            <div className="text-2xl font-bold text-white">{vaultMetrics.totalDisclosures}</div>
+                            <div className="text-sm text-slate-400">Total Disclosures</div>
                         </div>
-                        
-                        <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/40 rounded-xl p-4 border border-slate-700/50 backdrop-blur-sm">
-                            <div className="flex items-center gap-3 mb-2">
-                                <Target className="w-5 h-5 text-emerald-400" />
-                                <span className="text-sm text-slate-400">Success Rate</span>
-                            </div>
-                            <div className="text-2xl font-semibold text-emerald-400">{vaultMetrics.auditSuccessRate}%</div>
+                        <div className="text-center space-y-2">
+                            <div className="text-2xl font-bold text-white">{vaultMetrics.auditSuccessRate}%</div>
+                            <div className="text-sm text-slate-400">Success Rate</div>
                         </div>
-                        
-                        <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/40 rounded-xl p-4 border border-slate-700/50 backdrop-blur-sm">
-                            <div className="flex items-center gap-3 mb-2">
-                                <Zap className="w-5 h-5 text-purple-400" />
-                                <span className="text-sm text-slate-400">Reputation</span>
-                            </div>
-                            <div className="text-2xl font-semibold text-purple-400">{vaultMetrics.accuracyTier}</div>
+                        <div className="text-center space-y-2">
+                            <div className="text-2xl font-bold text-white">{vaultMetrics.accuracyTier}</div>
+                            <div className="text-sm text-slate-400">Reputation</div>
                         </div>
-                        
-                        <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/40 rounded-xl p-4 border border-slate-700/50 backdrop-blur-sm">
-                            <div className="flex items-center gap-3 mb-2">
-                                <Activity className="w-5 h-5 text-cyan-400" />
-                                <span className="text-sm text-slate-400">Score</span>
-                            </div>
-                            <div className="text-2xl font-semibold text-cyan-400">{vaultMetrics.reputationScore}</div>
+                        <div className="text-center space-y-2">
+                            <div className="text-2xl font-bold text-white">{vaultMetrics.reputationScore}</div>
+                            <div className="text-sm text-slate-400">Score</div>
                         </div>
                     </div>
-                </Card>
+                </div>
             </AnimatedSection>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -512,7 +618,7 @@ export default function IssuerPage() {
                                     label="Select Vault"
                                     value={selectedVault}
                                     onChange={(e) => setSelectedVault(e.target.value)}
-                                    className="bg-slate-800 border-slate-600 text-white"
+                                    helperText="Choose the vault for this yield disclosure"
                                 >
                                     <option>YieldProof Demo Vault</option>
                                 </Select>
@@ -523,7 +629,7 @@ export default function IssuerPage() {
                                     name="assetId"
                                     value={formData.assetId}
                                     onChange={handleInputChange}
-                                    className="bg-slate-800 border-slate-600 text-white"
+                                    helperText="Unique identifier for the asset generating yield"
                                 />
 
                                 <div className="grid grid-cols-2 gap-4">
@@ -533,7 +639,8 @@ export default function IssuerPage() {
                                         name="startDate"
                                         value={formData.startDate}
                                         onChange={handleInputChange}
-                                        className="bg-slate-800 border-slate-600 text-white [color-scheme:dark]"
+                                        max={formData.endDate || currentDate}
+                                        helperText="Beginning of yield period"
                                     />
                                     <Input
                                         label="End Date"
@@ -541,9 +648,30 @@ export default function IssuerPage() {
                                         name="endDate"
                                         value={formData.endDate}
                                         onChange={handleInputChange}
-                                        className="bg-slate-800 border-slate-600 text-white [color-scheme:dark]"
+                                        min={formData.startDate}
+                                        max={currentDate}
+                                        helperText="Must be today or earlier"
                                     />
                                 </div>
+
+                                {/* Date validation feedback */}
+                                {dateValidationError && (
+                                    <div className="flex items-start gap-2 p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
+                                        <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
+                                        <p className="text-sm text-red-300">{dateValidationError}</p>
+                                    </div>
+                                )}
+
+                                {/* Success feedback when dates are valid */}
+                                {formData.startDate && formData.endDate && !dateValidationError && (
+                                    <div className="flex items-start gap-2 p-4 bg-emerald-900/20 border border-emerald-500/30 rounded-lg">
+                                        <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                                        <div className="text-sm text-emerald-300">
+                                            <p className="font-medium">Valid date range selected</p>
+                                            <p className="text-emerald-400/80 mt-1">Period: {formatPeriod(formData.startDate, formData.endDate)}</p>
+                                        </div>
+                                    </div>
+                                )}
 
                                 <Input
                                     label="Yield Amount (MNT)"
@@ -551,7 +679,7 @@ export default function IssuerPage() {
                                     name="yieldAmount"
                                     value={formData.yieldAmount}
                                     onChange={handleInputChange}
-                                    className="bg-slate-800 border-slate-600 text-white"
+                                    helperText="Total yield generated during the specified period"
                                 />
 
                                 <div>
@@ -608,7 +736,7 @@ export default function IssuerPage() {
                                 <Button
                                     type="submit"
                                     className="w-full bg-slate-700 hover:bg-slate-600 text-white font-medium"
-                                    disabled={isWritePending || isConfirming || isUploading || !isConnected}
+                                    disabled={isWritePending || isConfirming || isUploading || !isConnected || !!dateValidationError}
                                 >
                                     {isWritePending || isConfirming ? (
                                         <>
@@ -640,16 +768,30 @@ export default function IssuerPage() {
                 <AnimatedSection delay={0.5}>
                     <Card className="backdrop-blur-xl">
                         <CardHeader>
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-slate-700/50 rounded-lg flex items-center justify-center">
-                                    <Clock className="w-5 h-5 text-slate-400" />
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-slate-700/50 rounded-lg flex items-center justify-center">
+                                        <Clock className="w-5 h-5 text-slate-400" />
+                                    </div>
+                                    <div>
+                                        <CardTitle className="text-white">Disclosure History</CardTitle>
+                                        <CardDescription className="text-slate-400">
+                                            Track verification status of your submissions
+                                        </CardDescription>
+                                    </div>
                                 </div>
-                                <div>
-                                    <CardTitle className="text-white">Disclosure History</CardTitle>
-                                    <CardDescription className="text-slate-400">
-                                        Track verification status of your submissions
-                                    </CardDescription>
-                                </div>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                        refetchTotalClaims();
+                                        refetchClaims();
+                                    }}
+                                    className="text-slate-400 hover:text-white"
+                                >
+                                    <Activity className="w-4 h-4 mr-1" />
+                                    Refresh
+                                </Button>
                             </div>
                         </CardHeader>
                         <CardContent>
@@ -680,7 +822,12 @@ export default function IssuerPage() {
                                             <div className="grid grid-cols-2 gap-4 mb-3">
                                                 <div>
                                                     <p className="text-xs text-slate-500">Yield Amount</p>
-                                                    <p className="text-sm font-mono text-green-400">{disclosure.yieldAmount.toLocaleString()} MNT</p>
+                                                    <p className="text-sm font-mono text-green-400">
+                                                        {disclosure.yieldAmount.toLocaleString(undefined, {
+                                                            minimumFractionDigits: 0,
+                                                            maximumFractionDigits: 6
+                                                        })} MNT
+                                                    </p>
                                                 </div>
                                                 <div>
                                                     <p className="text-xs text-slate-500">Submitted</p>
@@ -759,14 +906,15 @@ export default function IssuerPage() {
                         <CardContent>
                             <form onSubmit={handleEscrowFunding} className="space-y-6">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-2">Vault Escrow</label>
+                                    <label className="form-label">Vault Escrow</label>
                                     <select 
                                         value={escrowData.vaultName}
                                         onChange={(e) => setEscrowData(prev => ({ ...prev, vaultName: e.target.value }))}
-                                        className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white"
+                                        className="form-input w-full appearance-none cursor-pointer"
                                     >
                                         <option>YieldProof Demo Vault (0 Pool)</option>
                                     </select>
+                                    <p className="text-slate-400 text-sm mt-1">Select the vault to fund with realized yield</p>
                                 </div>
 
                                 <Input
@@ -775,7 +923,7 @@ export default function IssuerPage() {
                                     name="amount"
                                     value={escrowData.amount}
                                     onChange={handleEscrowInputChange}
-                                    className="bg-slate-800 border-slate-600 text-white"
+                                    helperText="Amount of realized yield to deposit into escrow"
                                 />
 
                                 <Button
@@ -889,6 +1037,7 @@ export default function IssuerPage() {
                     </Card>
                 </div>
             </AnimatedSection>
+            </div>
         </div>
     );
 }
