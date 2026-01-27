@@ -31,7 +31,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         )}
         <div className="relative">
           {icon && (
-            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 z-10">
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#F8F9FA]/60 z-10">
               {icon}
             </div>
           )}
@@ -39,9 +39,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             type={type}
             className={cn(
               "form-input",
-              "flex h-12 w-full rounded-lg border bg-slate-800/50 backdrop-blur-sm px-4 py-3 text-white placeholder:text-slate-400 transition-all duration-200",
-              "border-slate-700/50 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20",
-              "hover:border-slate-600/50 hover:bg-slate-800/70",
+              "flex h-12 w-full rounded-2xl border bg-[#1A1A2E]/60 backdrop-blur-sm px-4 py-3 text-white placeholder:text-[#F8F9FA]/40 transition-all duration-200",
+              "border-[#FF6B35]/20 focus:border-[#FF6B35]/60 focus:ring-2 focus:ring-[#FF6B35]/20",
+              "hover:border-[#FF6B35]/40 hover:bg-[#1A1A2E]/80",
               "disabled:cursor-not-allowed disabled:opacity-50",
               icon && "pl-11",
               error && "border-red-500/70 focus:border-red-400/70 focus:ring-red-400/30",
@@ -60,8 +60,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           {isFocused && (
             <motion.div
               className={cn(
-                "absolute inset-0 rounded-lg -z-10 blur-xl transition-all duration-300",
-                error ? "bg-red-500/10" : success ? "bg-emerald-500/10" : "bg-indigo-500/10"
+                "absolute inset-0 rounded-2xl -z-10 blur-xl transition-all duration-300",
+                error ? "bg-red-500/10" : success ? "bg-emerald-500/10" : "bg-[#FF6B35]/10"
               )}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -96,7 +96,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
               </p>
             )}
             {helperText && !error && !success && (
-              <p className="text-slate-400 text-sm">{helperText}</p>
+              <p className="text-[#F8F9FA]/60 text-sm">{helperText}</p>
             )}
           </motion.div>
         )}

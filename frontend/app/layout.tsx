@@ -1,14 +1,28 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Syne, DM_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Providers from "@/app/providers";
 import { ContractGuardrail } from "@/components/ContractGuardrail";
 
-const inter = Inter({ 
+const syne = Syne({
     subsets: ["latin"],
-    variable: "--font-inter",
-    display: 'swap', // Optimize font loading
+    variable: "--font-syne",
+    display: 'swap',
+    weight: ['400', '600', '700', '800'],
+});
+
+const dmSans = DM_Sans({
+    subsets: ["latin"],
+    variable: "--font-dm-sans",
+    display: 'swap',
+    weight: ['400', '500', '700'],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+    subsets: ["latin"],
+    variable: "--font-mono",
+    display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -29,8 +43,8 @@ export default function RootLayout({
     children: React.ReactNode;
 }) {
     return (
-        <html lang="en" className="dark">
-            <body className={`${inter.className} antialiased bg-slate-950 text-white`}>
+        <html lang="en" className={`dark ${syne.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}>
+            <body className={`${dmSans.className} antialiased bg-[#1A1A2E] text-white`}>
                 <Providers>
                     <ContractGuardrail />
                     <div className="relative flex min-h-screen flex-col">

@@ -10,12 +10,12 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: "border-indigo-500/50 bg-gradient-to-r from-indigo-600/30 to-indigo-500/20 text-indigo-200 shadow-lg shadow-indigo-500/20",
-        secondary: "border-slate-600/50 bg-gradient-to-r from-slate-700/30 to-slate-600/20 text-slate-300 shadow-lg shadow-slate-600/20",
+        default: "border-[#FF6B35]/50 bg-gradient-to-r from-[#FF6B35]/30 to-[#FF6B35]/20 text-[#FF6B35] shadow-lg shadow-[#FF6B35]/20",
+        secondary: "border-[#004E89]/50 bg-gradient-to-r from-[#004E89]/30 to-[#004E89]/20 text-[#F8F9FA]/80 shadow-lg shadow-[#004E89]/20",
         success: "border-emerald-500/50 bg-gradient-to-r from-emerald-600/30 to-emerald-500/20 text-emerald-200 shadow-lg shadow-emerald-500/20",
         destructive: "border-red-500/50 bg-gradient-to-r from-red-600/30 to-red-500/20 text-red-200 shadow-lg shadow-red-500/20",
-        warning: "border-amber-500/50 bg-gradient-to-r from-amber-600/30 to-amber-500/20 text-amber-200 shadow-lg shadow-amber-500/20",
-        outline: "border-slate-500/50 text-slate-300 hover:bg-slate-800/30",
+        warning: "border-[#FFD23F]/50 bg-gradient-to-r from-[#FFD23F]/30 to-[#FFD23F]/20 text-[#FFD23F] shadow-lg shadow-[#FFD23F]/20",
+        outline: "border-[#FF6B35]/30 text-[#F8F9FA]/80 hover:bg-[#FF6B35]/10",
         info: "border-cyan-500/50 bg-gradient-to-r from-cyan-600/30 to-cyan-500/20 text-cyan-200 shadow-lg shadow-cyan-500/20",
         purple: "border-purple-500/50 bg-gradient-to-r from-purple-600/30 to-purple-500/20 text-purple-200 shadow-lg shadow-purple-500/20",
       },

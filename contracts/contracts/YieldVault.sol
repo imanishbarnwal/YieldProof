@@ -29,6 +29,9 @@ contract YieldVault {
     /// @notice User ETH balances.
     mapping(address => uint256) public balances;
 
+    /// @notice Tracks whether a claim has been claimed to prevent double-claiming
+    mapping(uint256 => bool) public isClaimed;
+
     // ============================
     // Events
     // ============================
@@ -98,15 +101,21 @@ contract YieldVault {
 
     /**
      * @notice Unlocks yield/rewards for a claim if it meets the stake threshold.
-     * @dev This is a simplified action. In a real protocol, this might 
+     * @dev This is a simplified action. In a real protocol, this might
      *      mint tokens, release escrowed funds, or distribute rewards to attestors.
+     *      This function can only be called once per claim and marks it as claimed.
      * @param claimId The ID of the claim to unlock.
      */
     function unlockYield(uint256 claimId) external {
+        require(!isClaimed[claimId], "YieldVault: claim already unlocked");
         require(canUnlockYield(claimId), "YieldVault: insufficient stake to unlock");
+
+        // Mark the claim as claimed to prevent double-claiming
+        isClaimed[claimId] = true;
 
         // NOTE: Actual distribution logic would go here.
         // For the MVP, we just emit the event to signal the off-chain indexer/UI.
+        // In production, this would distribute yield proportionally to all depositors.
 
         uint256 stake = attestorRegistry.totalStakePerClaim(claimId);
         emit YieldUnlocked(claimId, stake);

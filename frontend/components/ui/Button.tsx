@@ -8,25 +8,25 @@ import { Loader2 } from "lucide-react"
 import { motion, HTMLMotionProps } from "framer-motion"
 
 const buttonVariants = cva(
-    "inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 tracking-wide relative overflow-hidden group",
+    "inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B35]/50 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 tracking-wide relative overflow-hidden group btn-ripple",
     {
         variants: {
             variant: {
-                default: "bg-slate-800 hover:bg-slate-700 text-white shadow-lg border border-slate-600/50 hover:border-slate-500/50 rounded-xl",
-                primary: "bg-white hover:bg-slate-100 text-slate-900 shadow-lg font-semibold rounded-xl border border-slate-200/50",
-                secondary: "bg-slate-700 hover:bg-slate-600 text-slate-100 shadow-lg border border-slate-600/50 rounded-xl backdrop-blur-sm",
-                outline: "border-2 border-slate-600/50 bg-slate-900/50 text-white hover:bg-slate-800/50 hover:border-slate-500/50 backdrop-blur-sm rounded-xl",
-                ghost: "text-slate-300 hover:bg-slate-800/50 hover:text-white rounded-lg",
-                destructive: "bg-red-700 hover:bg-red-600 text-white shadow-lg rounded-xl border border-red-600/50",
-                success: "bg-emerald-700 hover:bg-emerald-600 text-white shadow-lg rounded-xl border border-emerald-600/50",
-                link: "text-slate-400 underline-offset-4 hover:underline hover:text-slate-300 rounded-lg",
+                default: "bg-[#1A1A2E]/80 hover:bg-[#1A1A2E] text-white shadow-lg border border-[#FF6B35]/20 hover:border-[#FF6B35]/40 rounded-full",
+                primary: "bg-[#FF6B35] hover:bg-[#E85A2A] text-white shadow-lg font-semibold rounded-full border border-[#FF6B35]",
+                secondary: "bg-[#004E89] hover:bg-[#004E89]/80 text-white shadow-lg border border-[#004E89]/50 rounded-full backdrop-blur-sm",
+                outline: "border-2 border-[#FF6B35]/30 bg-[#1A1A2E]/50 text-white hover:bg-[#FF6B35]/10 hover:border-[#FF6B35]/50 backdrop-blur-sm rounded-full",
+                ghost: "text-[#F8F9FA]/80 hover:bg-[#FF6B35]/10 hover:text-white rounded-full",
+                destructive: "bg-red-700 hover:bg-red-600 text-white shadow-lg rounded-full border border-red-600/50",
+                success: "bg-emerald-700 hover:bg-emerald-600 text-white shadow-lg rounded-full border border-emerald-600/50",
+                link: "text-[#F8F9FA]/60 underline-offset-4 hover:underline hover:text-[#FF6B35] rounded-full",
             },
             size: {
                 default: "h-11 px-6 py-3",
-                sm: "h-9 px-4 py-2 text-xs rounded-lg",
-                lg: "h-13 px-8 py-4 text-base rounded-xl",
-                xl: "h-16 px-10 py-5 text-lg rounded-xl font-semibold",
-                icon: "h-11 w-11 rounded-lg",
+                sm: "h-9 px-4 py-2 text-xs",
+                lg: "h-13 px-8 py-4 text-base",
+                xl: "h-16 px-10 py-5 text-lg font-semibold",
+                icon: "h-11 w-11",
             },
         },
         defaultVariants: {
@@ -74,7 +74,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
                 {...props}
             >
                 {/* Subtle shimmer effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FF6B35]/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
                 
                 <div className="relative z-10 flex items-center justify-center">
                     {isLoading && (

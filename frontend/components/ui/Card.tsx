@@ -13,31 +13,33 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
     ({ className, hover = true, variant = "default", children, ...props }, ref) => {
         const variantClasses: Record<NonNullable<CardProps['variant']>, string> = {
             default: "glass-card",
-            accent: "glass-card accent-glow border-indigo-500/30",
+            accent: "glass-card accent-glow border-[#FF6B35]/30",
             success: "glass-card success-glow border-emerald-500/30",
-            warning: "glass-card warning-glow border-amber-500/30"
+            warning: "glass-card warning-glow border-[#FFD23F]/30"
         }
 
         return (
             <motion.div
                 ref={ref}
                 className={cn(
-                    "rounded-xl group",
+                    "rounded-3xl group relative",
                     variantClasses[variant as keyof typeof variantClasses],
-                    hover && "hover:shadow-2xl transition-all duration-300",
+                    hover && "hover:shadow-2xl transition-all duration-300 hover:border-[#FF6B35]/40",
                     className
                 )}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
-                whileHover={hover ? { 
+                whileHover={hover ? {
                     y: -4,
                     transition: { duration: 0.2 }
                 } : undefined}
                 {...props}
             >
+                {/* Top accent bar */}
+                <div className="card-accent-bar" />
                 {/* Subtle gradient overlay */}
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-indigo-500/5 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-[#FF6B35]/5 via-transparent to-[#FFD23F]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="relative z-10">
                     {children}
                 </div>
@@ -80,7 +82,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
     <p
         ref={ref}
-        className={cn("text-sm text-slate-400 leading-relaxed", className)}
+        className={cn("text-sm text-[#F8F9FA]/60 leading-relaxed", className)}
         {...props}
     />
 ))

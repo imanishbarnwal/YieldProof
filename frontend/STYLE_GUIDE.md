@@ -1,212 +1,313 @@
 # YieldProof Style Guide
 
 ## Design Philosophy
-Professional, clean, and trustworthy design that builds confidence in the DeFi protocol while maintaining modern aesthetics.
 
-## Color Palette
-
-### Primary Colors
-- **Background**: `bg-slate-950` - Deep, professional dark background
-- **Text Primary**: `text-white` - Clean white for headings and important text
-- **Text Secondary**: `text-slate-400` - Muted gray for descriptions and secondary text
-- **Text Accent**: `text-slate-300` - Medium gray for interactive elements
-
-### UI Colors
-- **Cards**: `bg-slate-800/30` with `border-slate-700/50` - Subtle glass morphism
-- **Buttons**: `bg-slate-800` with `border-slate-600/50` - Professional button styling
-- **Hover States**: `hover:bg-slate-700` - Subtle interaction feedback
-
-### Status Colors
-- **Success**: `text-emerald-400` / `bg-emerald-700`
-- **Warning**: `text-amber-400` / `bg-amber-700`
-- **Error**: `text-red-400` / `bg-red-700`
-- **Info**: `text-blue-400` / `bg-blue-700`
+Professional, distinctive design that builds confidence in the DeFi protocol while avoiding generic "AI slop" aesthetics. We prioritize bold choices, atmospheric depth, and thoughtful motion over safe, conservative defaults.
 
 ## Typography
 
-### Headings
-- **Hero Titles**: `text-4xl md:text-6xl font-bold` - Large, impactful headings
-- **Section Titles**: `text-4xl md:text-5xl font-bold` - Section headings
-- **Card Titles**: `text-2xl font-bold` - Card and component titles
-- **Subsections**: `text-xl font-semibold` - Smaller section headings
+### Font Families
+**PRIMARY RULE: Avoid generic fonts (Inter, Roboto, Arial, system fonts)**
 
-### Body Text
-- **Primary**: `text-xl text-slate-400 leading-relaxed font-light` - Main descriptions
-- **Secondary**: `text-slate-400 leading-relaxed` - Card descriptions
-- **Small Text**: `text-sm text-slate-400` - Labels and minor text
+**Selected Font Pairing:**
+- **Display/Headings**: Syne (800 weight) - Bold, geometric, distinctive
+- **Body**: DM Sans (400, 500, 700) - Clean, professional, readable
+- **Code/Technical**: JetBrains Mono - When displaying addresses or technical data
 
-### Special Text
-- **Uppercase Labels**: `uppercase tracking-wider text-sm font-medium` - Section labels
-- **Monospace**: `font-mono` - Addresses, hashes, technical data
+**Load from Google Fonts:**
+```html
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+```
 
-## Layout & Spacing
+**Application:**
+```css
+h1, h2, h3, h4 {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+}
 
-### Container Widths
-- **Hero Sections**: `max-w-4xl mx-auto` - Centered hero content
-- **Content Sections**: `max-w-7xl` - Main content areas
-- **Text Content**: `max-w-3xl mx-auto` - Readable text width
+body, p, span {
+  font-family: 'DM Sans', sans-serif;
+}
+```
 
-### Spacing
-- **Section Spacing**: `space-y-32` - Large gaps between major sections
-- **Component Spacing**: `space-y-16` - Medium gaps between components
-- **Element Spacing**: `space-y-8` - Small gaps between related elements
-- **Padding**: `p-6` or `p-8` - Consistent padding for cards and sections
+### Type Scale (Use Extremes)
+- **Hero Titles**: text-6xl md:text-7xl font-bold (100-200 or 800-900 weight)
+- **Section Titles**: text-5xl md:text-6xl font-bold
+- **Card Titles**: text-2xl font-bold
+- **Body Text**: text-xl font-light leading-relaxed (Note: light weight, not medium)
+- **Small Labels**: text-sm font-medium uppercase tracking-wider
 
-### Grid Systems
-- **Feature Cards**: `grid-cols-1 md:grid-cols-3 gap-8` - Three-column layout
-- **Process Steps**: `grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8` - Four-column process
-- **Stats**: `grid-cols-2 md:grid-cols-4 gap-6` - Statistics display
+**Principle**: High contrast = interesting
+- Use 100/200 weight vs 800/900, not 400 vs 600
+- Size jumps of 3x+, not 1.5x
+- Pair extremes: Ultra-light body with ultra-bold headings
+
+## Color & Theme
+
+### CSS Variables (Required)
+```css
+:root {
+  --primary: #FF6B35;        /* Distinctive orange, not purple */
+  --primary-dark: #E85A2A;
+  --secondary: #004E89;       /* Deep blue */
+  --accent: #FFD23F;          /* Vibrant yellow */
+  --dark: #1A1A2E;           /* Rich dark, not pure black */
+  --light: #F8F9FA;
+}
+```
+
+**CRITICAL: Avoid clichéd color schemes**
+❌ Purple gradients on white backgrounds
+❌ Generic blue (#3B82F6) as primary
+❌ Timid, evenly-distributed palettes
+✅ Dominant colors with sharp accents
+✅ High-contrast, memorable combinations
+
+### Background Strategy
+**Create Atmosphere and Depth (Never solid colors):**
+
+```css
+/* Animated gradient background */
+.hero-bg {
+  background: linear-gradient(135deg, #004E89 0%, #1A1A2E 50%, #FF6B35 100%);
+}
+
+.hero-bg::before {
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(255, 107, 53, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(255, 210, 63, 0.2) 0%, transparent 50%),
+    radial-gradient(circle at 40% 20%, rgba(0, 78, 137, 0.3) 0%, transparent 50%);
+  animation: float 20s ease-in-out infinite;
+}
+
+/* Mesh gradient alternative */
+.mesh-gradient {
+  background: 
+    radial-gradient(at 27% 37%, hsla(215, 98%, 61%, 0.3) 0px, transparent 50%),
+    radial-gradient(at 97% 21%, hsla(125, 98%, 72%, 0.2) 0px, transparent 50%),
+    radial-gradient(at 52% 99%, hsla(354, 98%, 61%, 0.3) 0px, transparent 50%);
+}
+```
+
+### UI Colors
+- **Cards**: Use layered backgrounds, not flat colors
+  ```css
+  background: white;
+  border: 2px solid transparent;
+  position: relative;
+  ```
+- **Hover States**: Transform-based, not just color change
+- **Status Colors**: Maintain accessibility while being distinctive
+
+## Motion & Animation
+
+### Philosophy
+One well-orchestrated page load with staggered reveals creates more delight than scattered micro-interactions
+
+### CSS-Only Animations (Preferred)
+```css
+/* Page load sequence */
+.fade-in {
+  opacity: 0;
+  transform: translateY(30px);
+  animation: fadeInUp 0.8s ease forwards;
+}
+
+.delay-1 { animation-delay: 0.1s; }
+.delay-2 { animation-delay: 0.2s; }
+.delay-3 { animation-delay: 0.3s; }
+
+/* Hover micro-interactions */
+.feature-card {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.feature-card:hover {
+  transform: translateY(-8px);
+}
+
+.feature-card::before {
+  transform: scaleX(0);
+  transition: transform 0.4s ease;
+}
+
+.feature-card:hover::before {
+  transform: scaleX(1);
+}
+```
+
+### Button Animations
+```css
+.cta-button {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.cta-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.cta-button:hover::before {
+  width: 300px;
+  height: 300px;
+}
+```
+
+### Motion Library for React
+When React is available, use Framer Motion:
+```tsx
+<motion.div
+  initial={{ opacity: 0, y: 30 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.8, delay: 0.2 }}
+/>
+```
 
 ## Components
 
 ### Buttons
 ```tsx
-// Primary Action
-<Button className="bg-slate-800 hover:bg-slate-700 text-white font-semibold px-8 py-4 rounded-xl">
+// Primary CTA - Must have animated hover effect
+<button className="cta-button bg-[var(--primary)] text-white px-8 py-4 rounded-full font-bold shadow-lg">
+  <span className="relative z-10">Get Started</span>
+</button>
 
-// Secondary Action  
-<Button variant="outline" className="bg-slate-900/50 hover:bg-slate-800/50 border-slate-600/50">
-
-// Sizes
-size="xl" // h-16 px-10 py-5 text-lg - Hero buttons
-size="lg" // h-13 px-8 py-4 text-base - Section buttons
-size="default" // h-11 px-6 py-3 - Standard buttons
-size="sm" // h-9 px-4 py-2 text-xs - Small buttons
+// Sizes (use extremes)
+// - Hero: px-10 py-5 text-lg
+// - Standard: px-8 py-4 text-base
+// - Small: px-4 py-2 text-sm
 ```
 
 ### Cards
 ```tsx
-<Card className="border-slate-700/50 bg-slate-800/30 backdrop-blur-sm">
-  <CardHeader className="text-center"> // Center align headers
-    <CardTitle className="text-2xl font-bold text-white">
-  </CardHeader>
-  <CardContent className="text-center"> // Center align content
-</Card>
-```
-
-### Badges
-```tsx
-// Status Badge
-<Badge variant="success" className="px-4 py-2 text-sm font-medium rounded-full">
-  <div className="w-2 h-2 bg-emerald-400 rounded-full mr-2 animate-pulse" />
-  Live Status
-</Badge>
-```
-
-### Icons
-- **Size**: `w-6 h-6` for section labels, `w-8 h-8` for cards, `w-5 h-5` for buttons
-- **Color**: `text-slate-300` or `text-slate-400` for consistency
-- **Background**: `bg-slate-700/30 rounded-xl` for icon containers
-
-## Animations
-
-### Hover Effects
-- **Scale**: `hover:scale-105` - Subtle lift effect for cards
-- **Transform**: `group-hover:translate-x-2` - Arrow movement on hover
-- **Opacity**: `opacity-0 group-hover:opacity-100` - Reveal effects
-
-### Transitions
-- **Duration**: `transition-all duration-300` - Standard transition timing
-- **Easing**: `ease-out` for hover in, `ease-in-out` for interactions
-
-### Framer Motion
-```tsx
-// Button animations
-whileHover={{ scale: 1.02, transition: { duration: 0.2, ease: "easeOut" }}}
-whileTap={{ scale: 0.98, transition: { duration: 0.1, ease: "easeInOut" }}}
-
-// Card animations  
-<AnimatedSection delay={0.1}> // Stagger animations with delays
-```
-
-## Hero Section Pattern
-
-### Structure
-```tsx
-<div className="text-center space-y-8 max-w-4xl mx-auto">
-  {/* Badges */}
-  <div className="flex items-center justify-center gap-3 mb-6">
-    <Badge variant="success" pulse>Status</Badge>
-    <Badge variant="default">Version</Badge>
-  </div>
+<div className="feature-card bg-white rounded-3xl p-8 border-2 border-transparent hover:border-[var(--primary)] transition-all duration-400">
+  {/* Top accent bar */}
+  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] transform scale-x-0 group-hover:scale-x-100 transition-transform" />
   
-  {/* Title */}
-  <div className="space-y-6">
-    <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-tight">
-      Page Title
-    </h1>
-    <p className="text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed font-light">
-      Description text
-    </p>
-  </div>
-  
-  {/* Stats Grid (optional) */}
-  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 max-w-4xl mx-auto">
-    <div className="text-center space-y-2">
-      <div className="text-2xl font-bold text-white">Value</div>
-      <div className="text-sm text-slate-400">Label</div>
-    </div>
-  </div>
+  {/* Card content */}
 </div>
 ```
 
-## Section Pattern
-
-### Structure
+### Icon Styling
 ```tsx
-<AnimatedSection className="w-full max-w-7xl space-y-16" delay={0.2}>
-  {/* Section Header */}
-  <div className="text-center space-y-4">
-    <div className="flex items-center justify-center gap-2 mb-4">
-      <Icon className="w-6 h-6 text-slate-400" />
-      <span className="text-slate-400 font-medium uppercase tracking-wider text-sm">
-        Section Label
-      </span>
-    </div>
-    <h2 className="text-4xl md:text-5xl font-bold text-white">Section Title</h2>
-    <p className="text-slate-400 font-light text-xl max-w-3xl mx-auto">
-      Section description
-    </p>
-  </div>
-  
-  {/* Section Content */}
-  <StaggeredContainer className="grid grid-cols-1 md:grid-cols-3 gap-8" staggerDelay={0.2}>
-    {/* Content items */}
-  </StaggeredContainer>
-</AnimatedSection>
+// Icon containers - distinctive shapes
+<div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] flex items-center justify-center">
+  <Icon className="w-8 h-8 text-white" />
+</div>
 ```
 
-## Best Practices
+## Layout Patterns
 
-### Alignment
-- **Center everything**: Use `text-center`, `mx-auto`, `justify-center` consistently
-- **Consistent spacing**: Use the spacing scale (4, 6, 8, 12, 16, 32)
-- **Grid alignment**: Ensure grid items have consistent heights and alignment
+### Hero Section (With Staggered Animation)
+```tsx
+<section className="relative min-h-screen flex items-center">
+  {/* Animated background */}
+  <div className="hero-bg absolute inset-0" />
+  
+  <div className="relative z-10 max-w-7xl mx-auto px-8">
+    <div className="grid md:grid-cols-2 gap-12">
+      <div>
+        <h1 className="text-7xl font-bold mb-6 fade-in">
+          Hero Title
+        </h1>
+        <p className="text-xl text-slate-200 fade-in delay-1">
+          Description
+        </p>
+        <div className="flex gap-4 fade-in delay-2">
+          {/* CTA buttons */}
+        </div>
+        <div className="flex gap-8 fade-in delay-3">
+          {/* Stats */}
+        </div>
+      </div>
+      <div className="fade-in delay-4">
+        {/* Visual element */}
+      </div>
+    </div>
+  </div>
+</section>
+```
 
-### Content
-- **Clear hierarchy**: Use consistent heading sizes and spacing
-- **Readable text**: Maintain good contrast and line height
-- **Consistent tone**: Professional but approachable language
+### Feature Grid
+```tsx
+<div className="grid md:grid-cols-3 gap-8">
+  {features.map((feature, i) => (
+    <div 
+      key={i}
+      className="feature-card"
+      style={{ animationDelay: `${i * 0.1}s` }}
+    >
+      {/* Feature content */}
+    </div>
+  ))}
+</div>
+```
 
-### Performance
-- **Optimize images**: Use appropriate formats and sizes
-- **Lazy loading**: Use AnimatedSection for performance
-- **Minimal animations**: Keep animations subtle and purposeful
+## Avoid Generic AI Aesthetics
 
-### Accessibility
-- **Color contrast**: Ensure sufficient contrast ratios
-- **Focus states**: Maintain visible focus indicators
-- **Semantic HTML**: Use proper heading hierarchy and landmarks
+### ❌ Don't Use
+- Inter, Roboto, Arial (fonts)
+- Purple gradients on white
+- bg-white, bg-gray-50 without layering
+- Predictable 3-column card grids without variation
+- Flat, solid color backgrounds
+- Generic blue as primary color
+- Animations on every element
+- Medium font weights (400, 500, 600)
+
+### ✅ Do Use
+- Distinctive font pairings (Syne + DM Sans)
+- Cohesive theme with CSS variables
+- Layered backgrounds with gradients/patterns
+- Dominant color with sharp accents
+- One well-orchestrated page load sequence
+- Extreme font weights (100-200 or 800-900)
+- Transform-based hover effects
+- Atmospheric depth in backgrounds
+
+## Inspiration Sources
+
+Draw from:
+- **IDE Themes**: VS Code themes, terminal color schemes
+- **Cultural Aesthetics**: Solarpunk, brutalism, Swiss design
+- **Specific Products**: Linear, Stripe, Vercel (not generic SaaS)
+
+## Process:
+1. Choose a distinctive aesthetic direction
+2. Define CSS variables for cohesive palette
+3. Select unique font pairing
+4. Design atmospheric backgrounds
+5. Plan one primary animation sequence
+6. Add transform-based micro-interactions
 
 ## Implementation Checklist
 
-- [ ] Hero section follows the standard pattern
-- [ ] All text is center-aligned where appropriate
-- [ ] Consistent spacing using the scale
-- [ ] Icons are properly sized and colored
-- [ ] Buttons use the standard variants
-- [ ] Cards have consistent styling
-- [ ] Animations are subtle and professional
-- [ ] Color palette is followed throughout
-- [ ] Typography scale is consistent
-- [ ] Grid layouts are properly aligned
+- [ ] Custom font pairing loaded (not Inter/Roboto)
+- [ ] CSS variables defined for cohesive theme
+- [ ] Atmospheric backgrounds (not solid colors)
+- [ ] Staggered page load animations
+- [ ] Transform-based hover effects
+- [ ] Extreme font weight contrast
+- [ ] Dominant color with sharp accents
+- [ ] Distinctive, context-specific design
+- [ ] High-impact button animations
+- [ ] Layered card styling with depth
+
+## Critical Reminders
+
+**Think outside the box!** Each generation should feel genuinely designed for its context, not cookie-cutter AI output. Vary between light/dark themes, different aesthetics, unexpected choices. Commit fully to a cohesive vision rather than playing it safe.
+
+**One great animation beats many mediocre ones.** Focus on the page load experience with carefully staggered reveals rather than adding hover effects everywhere.
+
+**Backgrounds create atmosphere.** Never default to solid colors. Layer gradients, use patterns, add depth.

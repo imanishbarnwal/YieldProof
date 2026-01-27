@@ -17,11 +17,11 @@ export default function Navbar() {
     ];
 
     return (
-        <nav className="sticky top-0 z-50 w-full glass-card border-b border-slate-700/50 flex h-16 items-center justify-between px-6">
+        <nav className="sticky top-0 z-50 w-full glass-card border-b border-[#FF6B35]/20 flex h-16 items-center justify-between px-6">
             {/* Logo / Brand */}
             <div className="flex items-center gap-8">
                 <Link href="/" className="flex items-center group">
-                    <span className="text-xl font-light text-white group-hover:text-slate-200 transition-colors duration-300 tracking-wide">
+                    <span className="text-xl font-bold font-display text-white group-hover:text-[#FF6B35] transition-colors duration-300 tracking-wide">
                         YieldProof
                     </span>
                 </Link>
@@ -37,19 +37,19 @@ export default function Navbar() {
                                 <Link
                                     href={item.href}
                                     className={cn(
-                                        "flex items-center gap-2 px-4 py-2 text-sm font-light rounded-xl transition-all duration-300 tracking-wide relative overflow-hidden group",
+                                        "flex items-center gap-2 px-4 py-2 text-sm font-light rounded-full transition-all duration-300 tracking-wide relative overflow-hidden group",
                                         isActive
-                                            ? "bg-slate-800/50 text-white border border-indigo-500/30 shadow-lg shadow-indigo-500/10"
-                                            : "text-slate-300 hover:text-white hover:bg-slate-800/30 border border-transparent hover:border-slate-600/30"
+                                            ? "bg-[#FF6B35]/10 text-white border border-[#FF6B35]/30 shadow-lg shadow-[#FF6B35]/10"
+                                            : "text-[#F8F9FA]/80 hover:text-white hover:bg-[#FF6B35]/10 border border-transparent hover:border-[#FF6B35]/20"
                                     )}
                                 >
                                     {/* Subtle gradient overlay for active state */}
                                     {isActive && (
-                                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-blue-500/5 to-indigo-500/10" />
+                                        <div className="absolute inset-0 bg-gradient-to-r from-[#FF6B35]/10 via-[#FFD23F]/5 to-[#FF6B35]/10" />
                                     )}
 
                                     {/* Hover shimmer effect */}
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FF6B35]/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
 
                                     <div className="relative z-10 flex items-center gap-2">
                                         <Icon className="w-4 h-4" />

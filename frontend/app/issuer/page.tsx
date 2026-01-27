@@ -509,7 +509,7 @@ export default function IssuerPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white">
+        <div className="min-h-screen bg-[#1A1A2E] text-white">
             <div className="max-w-7xl mx-auto px-6 py-8">
                 {/* Hero Section */}
                 <AnimatedSection className="mb-12">
@@ -522,31 +522,31 @@ export default function IssuerPage() {
                         </div>
 
                         <div className="space-y-6">
-                            <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-tight">
+                            <h1 className="text-4xl md:text-6xl font-display font-extrabold tracking-tight text-white leading-tight">
                                 Issuer Dashboard
                             </h1>
-                            <p className="text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed font-light">
+                            <p className="text-xl text-[#F8F9FA]/60 max-w-3xl mx-auto leading-relaxed font-light">
                                 Submit transparent yield disclosures and build institutional trust through cryptographic verification.
                             </p>
                         </div>
 
                         {/* Stats Grid */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 max-w-4xl mx-auto">
-                            <div className="text-center space-y-2">
-                                <div className="text-2xl font-bold text-white">{vaultMetrics.totalDisclosures}</div>
-                                <div className="text-sm text-slate-400">Total Disclosures</div>
+                            <div className="text-center space-y-2 p-4 rounded-3xl bg-[#1A1A2E]/60 border border-[#FF6B35]/20">
+                                <div className="text-2xl font-bold text-white font-display">{vaultMetrics.totalDisclosures}</div>
+                                <div className="text-sm text-[#F8F9FA]/60">Total Disclosures</div>
                             </div>
-                            <div className="text-center space-y-2">
-                                <div className="text-2xl font-bold text-white">{vaultMetrics.auditSuccessRate}%</div>
-                                <div className="text-sm text-slate-400">Success Rate</div>
+                            <div className="text-center space-y-2 p-4 rounded-3xl bg-[#1A1A2E]/60 border border-[#FF6B35]/20">
+                                <div className="text-2xl font-bold text-white font-display">{vaultMetrics.auditSuccessRate}%</div>
+                                <div className="text-sm text-[#F8F9FA]/60">Success Rate</div>
                             </div>
-                            <div className="text-center space-y-2">
-                                <div className="text-2xl font-bold text-white">{vaultMetrics.accuracyTier}</div>
-                                <div className="text-sm text-slate-400">Reputation</div>
+                            <div className="text-center space-y-2 p-4 rounded-3xl bg-[#1A1A2E]/60 border border-[#FF6B35]/20">
+                                <div className="text-2xl font-bold text-white font-display">{vaultMetrics.accuracyTier}</div>
+                                <div className="text-sm text-[#F8F9FA]/60">Reputation</div>
                             </div>
-                            <div className="text-center space-y-2">
-                                <div className="text-2xl font-bold text-white">{vaultMetrics.reputationScore}</div>
-                                <div className="text-sm text-slate-400">Score</div>
+                            <div className="text-center space-y-2 p-4 rounded-3xl bg-[#1A1A2E]/60 border border-[#FF6B35]/20">
+                                <div className="text-2xl font-bold text-white font-display">{vaultMetrics.reputationScore}</div>
+                                <div className="text-sm text-[#F8F9FA]/60">Score</div>
                             </div>
                         </div>
                     </div>
@@ -558,12 +558,12 @@ export default function IssuerPage() {
                         <Card className="backdrop-blur-xl">
                             <CardHeader>
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
+                                    <div className="w-10 h-10 bg-gradient-to-r from-[#FF6B35] to-[#E85A2A] rounded-lg flex items-center justify-center shadow-lg">
                                         <PlusCircle className="w-5 h-5 text-white" />
                                     </div>
                                     <div>
                                         <CardTitle className="text-white">New Disclosure</CardTitle>
-                                        <CardDescription className="text-slate-400">
+                                        <CardDescription className="text-[#F8F9FA]/60">
                                             Submit yield proof for verification
                                         </CardDescription>
                                     </div>
@@ -654,14 +654,14 @@ export default function IssuerPage() {
                                                     disabled={isUploading}
                                                 />
                                                 {isUploading ? (
-                                                    <Loader2 className="w-8 h-8 text-blue-400 animate-spin mx-auto mb-2" />
+                                                    <Loader2 className="w-8 h-8 text-[#FF6B35] animate-spin mx-auto mb-2" />
                                                 ) : (
-                                                    <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2 group-hover:text-blue-400 transition-colors" />
+                                                    <Upload className="w-8 h-8 text-[#F8F9FA]/60 mx-auto mb-2 group-hover:text-[#FF6B35] transition-colors" />
                                                 )}
-                                                <p className="text-slate-300 font-medium">
+                                                <p className="text-[#F8F9FA]/80 font-medium">
                                                     {isUploading ? "Uploading to IPFS..." : "Click to Upload Proof"}
                                                 </p>
-                                                <p className="text-slate-500 text-sm mt-1">PDF, CSV, Excel, Images</p>
+                                                <p className="text-[#F8F9FA]/50 text-sm mt-1">PDF, CSV, Excel, Images</p>
                                             </div>
                                         ) : (
                                             <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4 flex items-center justify-between">
@@ -692,7 +692,7 @@ export default function IssuerPage() {
 
                                     <Button
                                         type="submit"
-                                        className="w-full bg-slate-700 hover:bg-slate-600 text-white font-medium"
+                                        className="w-full bg-[#FF6B35] hover:bg-[#E85A2A] text-white font-medium rounded-full"
                                         disabled={isWritePending || isConfirming || isUploading || !isConnected || !!dateValidationError}
                                     >
                                         {isWritePending || isConfirming ? (
@@ -708,12 +708,12 @@ export default function IssuerPage() {
                                         )}
                                     </Button>
 
-                                    <div className="flex items-start gap-2 mt-4 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
-                                        <Info className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
-                                        <div className="text-xs text-slate-400">
-                                            <span className="font-semibold text-slate-300">MVP:</span> Proofs are public.
+                                    <div className="flex items-start gap-2 mt-4 p-3 bg-[#1A1A2E]/50 rounded-2xl border border-[#FF6B35]/20">
+                                        <Info className="w-4 h-4 text-[#FF6B35] mt-0.5 flex-shrink-0" />
+                                        <div className="text-xs text-[#F8F9FA]/60">
+                                            <span className="font-semibold text-[#F8F9FA]/80">MVP:</span> Proofs are public.
                                             <br />
-                                            <span className="text-slate-400">Encrypted proofs & ZK verification coming in V2.</span>
+                                            <span className="text-[#F8F9FA]/50">Encrypted proofs & ZK verification coming in V2.</span>
                                         </div>
                                     </div>
                                 </form>
@@ -727,12 +727,12 @@ export default function IssuerPage() {
                             <CardHeader>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-slate-700/50 rounded-lg flex items-center justify-center">
-                                            <Clock className="w-5 h-5 text-slate-400" />
+                                        <div className="w-10 h-10 bg-[#004E89]/20 rounded-lg flex items-center justify-center">
+                                            <Clock className="w-5 h-5 text-[#004E89]" />
                                         </div>
                                         <div>
                                             <CardTitle className="text-white">Disclosure History</CardTitle>
-                                            <CardDescription className="text-slate-400">
+                                            <CardDescription className="text-[#F8F9FA]/60">
                                                 Track verification status of your submissions
                                             </CardDescription>
                                         </div>
@@ -746,7 +746,7 @@ export default function IssuerPage() {
                                             refetchAttestorLists();
                                             refetchClaimStakes();
                                         }}
-                                        className="text-slate-400 hover:text-white"
+                                        className="text-[#F8F9FA]/60 hover:text-white"
                                     >
                                         <Activity className="w-4 h-4 mr-1" />
                                         Refresh
@@ -756,22 +756,22 @@ export default function IssuerPage() {
                             <CardContent>
                                 {disclosures.length === 0 ? (
                                     <div className="text-center py-12">
-                                        <div className="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                                            <FileText className="w-8 h-8 text-slate-500" />
+                                        <div className="w-16 h-16 bg-[#1A1A2E]/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <FileText className="w-8 h-8 text-[#F8F9FA]/40" />
                                         </div>
-                                        <h3 className="text-lg font-medium text-slate-300 mb-2">No disclosures yet</h3>
-                                        <p className="text-slate-500 text-sm max-w-sm mx-auto">
+                                        <h3 className="text-lg font-medium text-[#F8F9FA]/80 mb-2">No disclosures yet</h3>
+                                        <p className="text-[#F8F9FA]/50 text-sm max-w-sm mx-auto">
                                             Submit your first yield disclosure to start building your reputation on-chain.
                                         </p>
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
                                         {disclosures.map((disclosure) => (
-                                            <div key={disclosure.id} className="bg-slate-800/30 rounded-lg p-4 border border-slate-700/50 hover:bg-slate-800/50 transition-colors">
+                                            <div key={disclosure.id} className="bg-[#1A1A2E]/30 rounded-2xl p-4 border border-[#FF6B35]/20 hover:border-[#FF6B35]/40 transition-colors">
                                                 <div className="flex items-start justify-between mb-3">
                                                     <div>
                                                         <h4 className="font-medium text-white">{disclosure.assetId}</h4>
-                                                        <p className="text-sm text-slate-400">{disclosure.period}</p>
+                                                        <p className="text-sm text-[#F8F9FA]/60">{disclosure.period}</p>
                                                     </div>
                                                     <Badge variant={getStatusColor(disclosure.status) as any}>
                                                         {getStatusLabel(disclosure.status)}
@@ -780,8 +780,8 @@ export default function IssuerPage() {
 
                                                 <div className="grid grid-cols-2 gap-4 mb-3">
                                                     <div>
-                                                        <p className="text-xs text-slate-500">Yield Amount</p>
-                                                        <p className="text-sm font-mono text-green-400">
+                                                        <p className="text-xs text-[#F8F9FA]/50">Yield Amount</p>
+                                                        <p className="text-sm font-mono text-emerald-400">
                                                             {disclosure.yieldAmount.toLocaleString(undefined, {
                                                                 minimumFractionDigits: 0,
                                                                 maximumFractionDigits: 6
@@ -789,8 +789,8 @@ export default function IssuerPage() {
                                                         </p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-xs text-slate-500">Submitted</p>
-                                                        <p className="text-sm text-slate-300">{disclosure.submittedAt.toLocaleDateString()}</p>
+                                                        <p className="text-xs text-[#F8F9FA]/50">Submitted</p>
+                                                        <p className="text-sm text-[#F8F9FA]/80">{disclosure.submittedAt.toLocaleDateString()}</p>
                                                     </div>
                                                 </div>
 

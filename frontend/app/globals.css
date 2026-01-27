@@ -4,36 +4,49 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 10, 10, 10;
-  --background-end-rgb: 0, 0, 0;
+  /* YieldProof Brand Colors */
+  --primary: #FF6B35;
+  --primary-dark: #E85A2A;
+  --secondary: #004E89;
+  --accent: #FFD23F;
+  --dark: #1A1A2E;
+  --light: #F8F9FA;
 
-  /* Custom CSS Variables for Tailwind */
-  --background: 220 25% 6%;
+  /* Tailwind CSS Variables (HSL format) */
+  --background: 240 30% 11%;
   --foreground: 210 20% 95%;
-  --card: 220 20% 8%;
+  --card: 240 25% 13%;
   --card-foreground: 210 20% 95%;
-  --popover: 220 20% 8%;
+  --popover: 240 25% 13%;
   --popover-foreground: 210 20% 95%;
-  --primary: 217 91% 60%;
+  --primary-hsl: 16 100% 60%;
   --primary-foreground: 210 20% 95%;
-  --secondary: 220 15% 12%;
+  --secondary-hsl: 205 100% 27%;
   --secondary-foreground: 210 20% 85%;
-  --muted: 220 10% 60%;
-  --muted-foreground: 220 10% 60%;
-  --accent: 220 15% 15%;
-  --accent-foreground: 210 20% 95%;
+  --muted: 240 10% 40%;
+  --muted-foreground: 240 10% 60%;
+  --accent-hsl: 46 100% 59%;
+  --accent-foreground: 240 30% 11%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 210 20% 95%;
-  --border: 220 15% 15%;
-  --input: 220 15% 15%;
-  --ring: 217 91% 60%;
+  --border: 240 15% 20%;
+  --input: 240 15% 20%;
+  --ring: 16 100% 60%;
   --radius: 0.75rem;
 }
 
 @layer base {
   body {
-    @apply bg-slate-950 text-white min-h-screen selection:bg-indigo-500/30 antialiased;
+    @apply bg-[#1A1A2E] text-white min-h-screen antialiased;
+    font-family: var(--font-dm-sans), system-ui, sans-serif;
+    selection {
+      background: rgba(255, 107, 53, 0.3);
+    }
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-syne), system-ui, sans-serif;
+    font-weight: 800;
   }
 
   /* Custom scrollbar */
@@ -42,26 +55,45 @@
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-slate-900/50;
+    background: rgba(26, 26, 46, 0.5);
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-indigo-500/50 rounded-full;
+    @apply rounded-full;
+    background: rgba(255, 107, 53, 0.5);
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-indigo-400/70;
+    background: rgba(255, 107, 53, 0.7);
   }
 }
 
 @layer components {
   .glass-card {
-    @apply bg-gradient-to-br from-slate-800/60 to-slate-900/40 backdrop-blur-xl border border-slate-700/50;
+    @apply backdrop-blur-xl border rounded-3xl;
+    background: linear-gradient(135deg, rgba(26, 26, 46, 0.8) 0%, rgba(26, 26, 46, 0.6) 100%);
+    border-color: rgba(255, 107, 53, 0.2);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
+  .glass-card:hover {
+    border-color: rgba(255, 107, 53, 0.4);
+  }
+
+  .card-accent-bar {
+    @apply absolute top-0 left-0 w-full h-1 rounded-t-3xl;
+    background: linear-gradient(90deg, #FF6B35, #FFD23F);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease;
+  }
+
+  .group:hover .card-accent-bar {
+    transform: scaleX(1);
+  }
+
   .accent-glow {
-    box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+    box-shadow: 0 0 20px rgba(255, 107, 53, 0.15);
   }
 
   .success-glow {
@@ -69,16 +101,74 @@
   }
 
   .warning-glow {
-    box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
+    box-shadow: 0 0 20px rgba(255, 210, 63, 0.15);
+  }
+
+  /* Button ripple effect */
+  .btn-ripple {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-ripple::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s ease, height 0.6s ease;
+  }
+
+  .btn-ripple:hover::before {
+    width: 300px;
+    height: 300px;
+  }
+
+  /* Atmospheric background */
+  .atmospheric-bg {
+    position: relative;
+    background: linear-gradient(135deg, #004E89 0%, #1A1A2E 50%, #1A1A2E 100%);
+  }
+
+  .atmospheric-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 20% 50%, rgba(255, 107, 53, 0.15) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(255, 210, 63, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 40% 20%, rgba(0, 78, 137, 0.2) 0%, transparent 50%);
+    pointer-events: none;
   }
 
   /* Enhanced form styles */
   .form-input {
-    @apply bg-slate-800/50 border border-slate-700/50 rounded-lg px-4 py-3 text-white placeholder:text-slate-400 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200;
+    @apply rounded-2xl px-4 py-3 text-white transition-all duration-200;
+    background: rgba(26, 26, 46, 0.6);
+    border: 1px solid rgba(255, 107, 53, 0.2);
+  }
+
+  .form-input:hover {
+    border-color: rgba(255, 107, 53, 0.4);
+  }
+
+  .form-input:focus {
+    border-color: rgba(255, 107, 53, 0.6);
+    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+    outline: none;
+  }
+
+  .form-input::placeholder {
+    color: rgba(248, 249, 250, 0.4);
   }
 
   .form-label {
-    @apply block text-sm font-medium text-slate-300 mb-2;
+    @apply block text-sm font-medium mb-2;
+    color: rgba(248, 249, 250, 0.8);
   }
 
   .form-error {
@@ -89,30 +179,7 @@
     @apply text-emerald-400 text-sm mt-1;
   }
 
-  /* Enhanced gradient backgrounds */
-  .gradient-bg-primary {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
-  }
-
-  .gradient-bg-secondary {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%);
-  }
-
-  .gradient-bg-accent {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(251, 146, 60, 0.1) 100%);
-  }
-
-  /* Animated gradient text */
-  .gradient-text-animated {
-    background: linear-gradient(-45deg, #ffffff, #e5e7eb, #9ca3af, #ffffff);
-    background-size: 400% 400%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    animation: gradientShift 3s ease-in-out infinite;
-  }
-
-  /* Static gradient text classes */
+  /* Gradient text classes */
   .gradient-text {
     background: linear-gradient(135deg, #ffffff 0%, #e5e7eb 50%, #9ca3af 100%);
     -webkit-background-clip: text;
@@ -121,17 +188,19 @@
   }
 
   .gradient-text-primary {
-    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%);
+    background: linear-gradient(135deg, #FF6B35 0%, #FFD23F 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
 
-  .gradient-text-subtle {
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
+  .gradient-text-animated {
+    background: linear-gradient(-45deg, #FF6B35, #FFD23F, #FF6B35, #E85A2A);
+    background-size: 400% 400%;
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+    animation: gradient-shift 3s ease-in-out infinite;
   }
 
   /* Floating animation for background elements */
@@ -148,55 +217,70 @@
     animation: float 8s ease-in-out infinite;
     animation-delay: 4s;
   }
-}
 
-@keyframes gradientShift {
-  0% {
-    background-position: 0% 50%;
+  /* Staggered fade in animation */
+  .stagger-in {
+    opacity: 0;
+    transform: translateY(30px);
+    animation: stagger-in 0.8s ease forwards;
   }
 
-  50% {
-    background-position: 100% 50%;
-  }
-
-  100% {
-    background-position: 0% 50%;
-  }
+  .delay-1 { animation-delay: 0.1s; }
+  .delay-2 { animation-delay: 0.2s; }
+  .delay-3 { animation-delay: 0.3s; }
+  .delay-4 { animation-delay: 0.4s; }
+  .delay-5 { animation-delay: 0.5s; }
 }
 
 @keyframes float {
-
-  0%,
-  100% {
+  0%, 100% {
     transform: translateY(0px) rotate(0deg);
   }
-
   33% {
     transform: translateY(-10px) rotate(1deg);
   }
-
   66% {
     transform: translateY(5px) rotate(-1deg);
   }
 }
 
-/* Custom dropdown styling for better dark theme support */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes stagger-in {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Custom dropdown styling for dark theme */
 select option {
-  background-color: rgb(30 41 59) !important;
-  /* slate-800 */
+  background-color: #1A1A2E !important;
   color: white !important;
   padding: 8px 12px;
 }
 
 select option:checked {
-  background-color: rgb(99 102 241) !important;
-  /* indigo-500 */
+  background-color: #FF6B35 !important;
   color: white !important;
 }
 
 select option:hover {
-  background-color: rgb(51 65 85) !important;
-  /* slate-700 */
+  background-color: rgba(255, 107, 53, 0.3) !important;
   color: white !important;
 }
 
@@ -213,21 +297,29 @@ select {
 
 /* ConnectButton styling to match site design */
 .connect-button-wrapper button[data-testid="rk-connect-button"] {
-  @apply bg-slate-800/50 hover:bg-slate-700/50 border border-slate-600/50 hover:border-slate-500/50 text-white font-light px-4 py-2 rounded-xl transition-all duration-300 backdrop-blur-sm;
+  @apply hover:bg-opacity-80 text-white font-light px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-sm;
+  background: rgba(255, 107, 53, 0.2);
+  border: 1px solid rgba(255, 107, 53, 0.4);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .connect-button-wrapper button[data-testid="rk-connect-button"]:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  background: rgba(255, 107, 53, 0.3);
+  border-color: rgba(255, 107, 53, 0.6);
+  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .connect-button-wrapper button[data-testid="rk-account-button"] {
-  @apply bg-slate-800/50 hover:bg-slate-700/50 border border-slate-600/50 hover:border-slate-500/50 text-white font-light px-4 py-2 rounded-xl transition-all duration-300 backdrop-blur-sm;
+  @apply hover:bg-opacity-80 text-white font-light px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-sm;
+  background: rgba(255, 107, 53, 0.2);
+  border: 1px solid rgba(255, 107, 53, 0.4);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .connect-button-wrapper button[data-testid="rk-account-button"]:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  background: rgba(255, 107, 53, 0.3);
+  border-color: rgba(255, 107, 53, 0.6);
+  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }

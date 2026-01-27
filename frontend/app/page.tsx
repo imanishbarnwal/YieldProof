@@ -25,11 +25,17 @@ import {
 export default function Home() {
     return (
         <div className="relative overflow-hidden min-h-screen">
-            {/* Background Elements */}
-            <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
+            {/* Atmospheric Background */}
+            <div className="absolute inset-0 bg-[#1A1A2E]" />
+            <div className="absolute inset-0 bg-gradient-to-br from-[#004E89]/20 via-transparent to-[#FF6B35]/10" />
+
+            {/* Animated Gradient Orbs */}
+            <div className="absolute top-1/4 left-1/5 w-96 h-96 bg-[#FF6B35]/20 rounded-full blur-3xl animate-float-orb" />
+            <div className="absolute bottom-1/4 right-1/5 w-80 h-80 bg-[#004E89]/20 rounded-full blur-3xl animate-float-orb" style={{ animationDelay: '5s' }} />
+            <div className="absolute top-1/2 right-1/3 w-64 h-64 bg-[#FFD23F]/10 rounded-full blur-3xl animate-float-orb" style={{ animationDelay: '10s' }} />
 
             {/* Grid Pattern Overlay */}
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:50px_50px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(255,107,53,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,107,53,0.02)_1px,transparent_1px)] bg-[size:50px_50px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
 
             <div className="relative z-10 w-full">
                 {/* Hero Section */}
@@ -45,26 +51,26 @@ export default function Home() {
                         </div>
 
                         <div className="space-y-8">
-                            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight text-white">
+                            <h1 className="text-5xl md:text-6xl lg:text-7xl font-display font-extrabold tracking-tight leading-tight text-white stagger-in">
                                 Trustless Yield Verification
                             </h1>
 
-                            <p className="text-xl md:text-2xl text-slate-300 max-w-4xl mx-auto leading-relaxed font-light">
+                            <p className="text-xl md:text-2xl text-[#F8F9FA]/80 max-w-4xl mx-auto leading-relaxed font-light stagger-in delay-1">
                                 The first protocol enabling Real World Asset (RWA) issuers
                                 to prove yield generation on-chain through cryptographic verification and economic consensus.
                             </p>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row gap-6 justify-center pt-8">
+                        <div className="flex flex-col sm:flex-row gap-6 justify-center pt-8 stagger-in delay-2">
                             <Link href="/investor">
                                 <Button
                                     size="xl"
-                                    className="relative overflow-hidden bg-blue-600/20 hover:bg-blue-500/30 border-2 border-blue-400/50 hover:border-blue-300/70 text-white font-semibold px-8 py-4 rounded-xl backdrop-blur-sm transition-all duration-300 shadow-lg shadow-blue-500/20 hover:shadow-blue-400/40"
+                                    className="relative overflow-hidden bg-[#FF6B35] hover:bg-[#E85A2A] border-2 border-[#FF6B35] hover:border-[#E85A2A] text-white font-semibold px-8 py-4 rounded-full backdrop-blur-sm transition-all duration-300 shadow-lg shadow-[#FF6B35]/30 hover:shadow-[#FF6B35]/50 btn-ripple"
                                     style={{
-                                        boxShadow: '0 0 20px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                                        boxShadow: '0 0 20px rgba(255, 107, 53, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
                                     }}
                                 >
-                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400/10 via-blue-300/20 to-blue-400/10 opacity-0 hover:opacity-100 transition-opacity duration-300" />
+                                    <div className="absolute inset-0 bg-gradient-to-r from-[#FFD23F]/10 via-[#FFD23F]/20 to-[#FFD23F]/10 opacity-0 hover:opacity-100 transition-opacity duration-300" />
                                     <PieChart className="w-5 h-5 mr-2" />
                                     Start Investing
                                     <ArrowRight className="w-5 h-5 ml-2" />
@@ -75,12 +81,12 @@ export default function Home() {
                                 <Button
                                     variant="outline"
                                     size="xl"
-                                    className="relative overflow-hidden bg-slate-900/20 hover:bg-slate-800/30 border-2 border-slate-500/40 hover:border-slate-400/60 text-white font-semibold px-8 py-4 rounded-xl backdrop-blur-sm transition-all duration-300 shadow-lg shadow-slate-700/20"
+                                    className="relative overflow-hidden bg-[#004E89]/20 hover:bg-[#004E89]/30 border-2 border-[#004E89]/50 hover:border-[#004E89]/70 text-white font-semibold px-8 py-4 rounded-full backdrop-blur-sm transition-all duration-300 shadow-lg shadow-[#004E89]/20 btn-ripple"
                                     style={{
-                                        boxShadow: '0 0 15px rgba(100, 116, 139, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                                        boxShadow: '0 0 15px rgba(0, 78, 137, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                                     }}
                                 >
-                                    <div className="absolute inset-0 bg-gradient-to-r from-slate-400/5 via-slate-300/10 to-slate-400/5 opacity-0 hover:opacity-100 transition-opacity duration-300" />
+                                    <div className="absolute inset-0 bg-gradient-to-r from-[#004E89]/5 via-[#004E89]/10 to-[#004E89]/5 opacity-0 hover:opacity-100 transition-opacity duration-300" />
                                     <LayoutDashboard className="w-5 h-5 mr-2" />
                                     Issuer Portal
                                     <ArrowRight className="w-5 h-5 ml-2" />
@@ -89,22 +95,22 @@ export default function Home() {
                         </div>
 
                         {/* Trust Metrics */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-16 max-w-4xl mx-auto">
-                            <div className="text-center space-y-2 p-4 rounded-xl bg-slate-800/30 border border-slate-700/30">
-                                <div className="text-3xl font-bold text-white">100%</div>
-                                <div className="text-sm text-slate-400">Transparent</div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-16 max-w-4xl mx-auto stagger-in delay-3">
+                            <div className="text-center space-y-2 p-4 rounded-3xl bg-[#1A1A2E]/60 border border-[#FF6B35]/20 hover:border-[#FF6B35]/40 transition-colors">
+                                <div className="text-3xl font-bold text-white font-display">100%</div>
+                                <div className="text-sm text-[#F8F9FA]/60">Transparent</div>
                             </div>
-                            <div className="text-center space-y-2 p-4 rounded-xl bg-slate-800/30 border border-slate-700/30">
-                                <div className="text-3xl font-bold text-white">0</div>
-                                <div className="text-sm text-slate-400">Trust Required</div>
+                            <div className="text-center space-y-2 p-4 rounded-3xl bg-[#1A1A2E]/60 border border-[#FF6B35]/20 hover:border-[#FF6B35]/40 transition-colors">
+                                <div className="text-3xl font-bold text-white font-display">0</div>
+                                <div className="text-sm text-[#F8F9FA]/60">Trust Required</div>
                             </div>
-                            <div className="text-center space-y-2 p-4 rounded-xl bg-slate-800/30 border border-slate-700/30">
-                                <div className="text-3xl font-bold text-white">24/7</div>
-                                <div className="text-sm text-slate-400">Verification</div>
+                            <div className="text-center space-y-2 p-4 rounded-3xl bg-[#1A1A2E]/60 border border-[#FF6B35]/20 hover:border-[#FF6B35]/40 transition-colors">
+                                <div className="text-3xl font-bold text-white font-display">24/7</div>
+                                <div className="text-sm text-[#F8F9FA]/60">Verification</div>
                             </div>
-                            <div className="text-center space-y-2 p-4 rounded-xl bg-slate-800/30 border border-slate-700/30">
-                                <div className="text-3xl font-bold text-white">∞</div>
-                                <div className="text-sm text-slate-400">Scalability</div>
+                            <div className="text-center space-y-2 p-4 rounded-3xl bg-[#1A1A2E]/60 border border-[#FF6B35]/20 hover:border-[#FF6B35]/40 transition-colors">
+                                <div className="text-3xl font-bold text-white font-display">∞</div>
+                                <div className="text-sm text-[#F8F9FA]/60">Scalability</div>
                             </div>
                         </div>
                     </div>
@@ -115,10 +121,10 @@ export default function Home() {
                     <div className="max-w-7xl mx-auto space-y-16">
                         <div className="text-center space-y-6">
                             <div className="flex items-center justify-center gap-2 mb-4">
-                                <span className="text-slate-400 font-medium uppercase tracking-wider text-sm">Protocol Flow</span>
+                                <span className="text-[#FF6B35] font-medium uppercase tracking-wider text-sm">Protocol Flow</span>
                             </div>
-                            <h2 className="text-4xl md:text-5xl font-bold text-white">How YieldProof Works</h2>
-                            <p className="text-slate-300 font-light text-xl max-w-3xl mx-auto leading-relaxed">
+                            <h2 className="text-4xl md:text-5xl font-display font-extrabold text-white">How YieldProof Works</h2>
+                            <p className="text-[#F8F9FA]/80 font-light text-xl max-w-3xl mx-auto leading-relaxed">
                                 End-to-end verification powered by cryptographic proofs, economic staking, and decentralized consensus.
                             </p>
                         </div>
@@ -300,29 +306,29 @@ export default function Home() {
                     <div className="max-w-7xl mx-auto space-y-16">
                         <div className="text-center space-y-6">
                             <div className="flex items-center justify-center gap-2 mb-4">
-                                <Award className="w-6 h-6 text-amber-400" />
-                                <span className="text-slate-400 font-medium uppercase tracking-wider text-sm">Ecosystem Roles</span>
+                                <Award className="w-6 h-6 text-[#FFD23F]" />
+                                <span className="text-[#FF6B35] font-medium uppercase tracking-wider text-sm">Ecosystem Roles</span>
                             </div>
-                            <h2 className="text-4xl md:text-5xl font-bold text-white">Built for Everyone</h2>
-                            <p className="text-slate-300 font-light text-xl max-w-3xl mx-auto leading-relaxed">
+                            <h2 className="text-4xl md:text-5xl font-display font-extrabold text-white">Built for Everyone</h2>
+                            <p className="text-[#F8F9FA]/80 font-light text-xl max-w-3xl mx-auto leading-relaxed">
                                 Whether you're issuing assets, verifying claims, or investing capital - YieldProof has you covered.
                             </p>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                             <Link href="/issuer" className="group">
-                                <Card className="h-full cursor-pointer border border-slate-700/50 bg-slate-800/40 backdrop-blur-sm hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-900/20 transition-all duration-300">
+                                <Card className="h-full cursor-pointer border border-[#FF6B35]/20 bg-[#1A1A2E]/60 backdrop-blur-sm hover:border-[#FF6B35]/40 hover:shadow-lg hover:shadow-[#FF6B35]/10 transition-all duration-300">
                                     <CardHeader className="p-8 text-center">
-                                        <div className="w-16 h-16 bg-blue-600/20 border border-blue-500/30 rounded-xl flex items-center justify-center mb-6 mx-auto">
-                                            <LayoutDashboard className="w-8 h-8 text-blue-300" />
+                                        <div className="w-16 h-16 bg-[#FF6B35]/20 border border-[#FF6B35]/30 rounded-xl flex items-center justify-center mb-6 mx-auto">
+                                            <LayoutDashboard className="w-8 h-8 text-[#FF6B35]" />
                                         </div>
-                                        <CardTitle className="text-2xl font-bold text-white mb-4">For Issuers</CardTitle>
+                                        <CardTitle className="text-2xl font-display font-bold text-white mb-4">For Issuers</CardTitle>
                                     </CardHeader>
                                     <CardContent className="p-8 pt-0 text-center">
-                                        <p className="text-slate-400 mb-6 leading-relaxed text-lg">
+                                        <p className="text-[#F8F9FA]/70 mb-6 leading-relaxed text-lg">
                                             Submit cryptographically verifiable proofs of off-chain yield generation for your RWA vaults with full transparency.
                                         </p>
-                                        <div className="flex items-center justify-center text-blue-300 font-semibold group-hover:text-white transition-colors">
+                                        <div className="flex items-center justify-center text-[#FF6B35] font-semibold group-hover:text-white transition-colors">
                                             <span>Submit Proof</span>
                                             <ArrowRight className="w-5 h-5 ml-2" />
                                         </div>
@@ -331,15 +337,15 @@ export default function Home() {
                             </Link>
 
                             <Link href="/attestor" className="group">
-                                <Card className="h-full cursor-pointer border border-slate-700/50 bg-slate-800/40 backdrop-blur-sm hover:border-emerald-500/30 hover:shadow-lg hover:shadow-emerald-900/20 transition-all duration-300">
+                                <Card className="h-full cursor-pointer border border-emerald-500/20 bg-[#1A1A2E]/60 backdrop-blur-sm hover:border-emerald-500/40 hover:shadow-lg hover:shadow-emerald-900/20 transition-all duration-300">
                                     <CardHeader className="p-8 text-center">
                                         <div className="w-16 h-16 bg-emerald-600/20 border border-emerald-500/30 rounded-xl flex items-center justify-center mb-6 mx-auto">
                                             <ShieldCheck className="w-8 h-8 text-emerald-300" />
                                         </div>
-                                        <CardTitle className="text-2xl font-bold text-white mb-4">For Attestors</CardTitle>
+                                        <CardTitle className="text-2xl font-display font-bold text-white mb-4">For Attestors</CardTitle>
                                     </CardHeader>
                                     <CardContent className="p-8 pt-0 text-center">
-                                        <p className="text-slate-400 mb-6 leading-relaxed text-lg">
+                                        <p className="text-[#F8F9FA]/70 mb-6 leading-relaxed text-lg">
                                             Verify documents and on-chain data to earn rewards while securing protocol integrity through economic consensus.
                                         </p>
                                         <div className="flex items-center justify-center text-emerald-300 font-semibold group-hover:text-white transition-colors">
@@ -351,18 +357,18 @@ export default function Home() {
                             </Link>
 
                             <Link href="/investor" className="group">
-                                <Card className="h-full cursor-pointer border border-slate-700/50 bg-slate-800/40 backdrop-blur-sm hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-900/20 transition-all duration-300">
+                                <Card className="h-full cursor-pointer border border-[#004E89]/20 bg-[#1A1A2E]/60 backdrop-blur-sm hover:border-[#004E89]/40 hover:shadow-lg hover:shadow-[#004E89]/20 transition-all duration-300">
                                     <CardHeader className="p-8 text-center">
-                                        <div className="w-16 h-16 bg-purple-600/20 border border-purple-500/30 rounded-xl flex items-center justify-center mb-6 mx-auto">
-                                            <PieChart className="w-8 h-8 text-purple-300" />
+                                        <div className="w-16 h-16 bg-[#004E89]/20 border border-[#004E89]/30 rounded-xl flex items-center justify-center mb-6 mx-auto">
+                                            <PieChart className="w-8 h-8 text-[#004E89]" />
                                         </div>
-                                        <CardTitle className="text-2xl font-bold text-white mb-4">For Investors</CardTitle>
+                                        <CardTitle className="text-2xl font-display font-bold text-white mb-4">For Investors</CardTitle>
                                     </CardHeader>
                                     <CardContent className="p-8 pt-0 text-center">
-                                        <p className="text-slate-400 mb-6 leading-relaxed text-lg">
+                                        <p className="text-[#F8F9FA]/70 mb-6 leading-relaxed text-lg">
                                             Deposit into verified RWA vaults with complete transparency on yield sources and real-time verification status.
                                         </p>
-                                        <div className="flex items-center justify-center text-purple-300 font-semibold group-hover:text-white transition-colors">
+                                        <div className="flex items-center justify-center text-[#004E89] font-semibold group-hover:text-white transition-colors">
                                             <span>View Vaults</span>
                                             <ArrowRight className="w-5 h-5 ml-2" />
                                         </div>
@@ -379,42 +385,42 @@ export default function Home() {
                         <div className="text-center space-y-6">
                             <div className="flex items-center justify-center gap-2 mb-4">
                                 <Lock className="w-6 h-6 text-emerald-400" />
-                                <span className="text-slate-400 font-medium uppercase tracking-wider text-sm">Trust & Security</span>
+                                <span className="text-[#FF6B35] font-medium uppercase tracking-wider text-sm">Trust & Security</span>
                             </div>
-                            <h2 className="text-4xl md:text-5xl font-bold text-white">Built on Unbreakable Foundations</h2>
+                            <h2 className="text-4xl md:text-5xl font-display font-extrabold text-white">Built on Unbreakable Foundations</h2>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                            <div className="text-center space-y-4 p-6">
-                                <div className="w-12 h-12 bg-slate-700/30 rounded-xl flex items-center justify-center mx-auto">
-                                    <CheckCircle2 className="w-6 h-6 text-slate-300" />
+                            <div className="text-center space-y-4 p-6 rounded-3xl bg-[#1A1A2E]/40 border border-[#FF6B35]/10 hover:border-[#FF6B35]/30 transition-colors">
+                                <div className="w-12 h-12 bg-[#FF6B35]/20 rounded-xl flex items-center justify-center mx-auto">
+                                    <CheckCircle2 className="w-6 h-6 text-[#FF6B35]" />
                                 </div>
-                                <h3 className="text-lg font-semibold text-white">Cryptographic Proofs</h3>
-                                <p className="text-slate-400 text-sm leading-relaxed">Immutable on-chain verification</p>
+                                <h3 className="text-lg font-semibold text-white font-display">Cryptographic Proofs</h3>
+                                <p className="text-[#F8F9FA]/60 text-sm leading-relaxed">Immutable on-chain verification</p>
                             </div>
 
-                            <div className="text-center space-y-4 p-6">
-                                <div className="w-12 h-12 bg-slate-700/30 rounded-xl flex items-center justify-center mx-auto">
-                                    <TrendingUp className="w-6 h-6 text-slate-300" />
+                            <div className="text-center space-y-4 p-6 rounded-3xl bg-[#1A1A2E]/40 border border-[#FF6B35]/10 hover:border-[#FF6B35]/30 transition-colors">
+                                <div className="w-12 h-12 bg-[#FF6B35]/20 rounded-xl flex items-center justify-center mx-auto">
+                                    <TrendingUp className="w-6 h-6 text-[#FF6B35]" />
                                 </div>
-                                <h3 className="text-lg font-semibold text-white">Economic Security</h3>
-                                <p className="text-slate-400 text-sm leading-relaxed">Stake-based consensus mechanism</p>
+                                <h3 className="text-lg font-semibold text-white font-display">Economic Security</h3>
+                                <p className="text-[#F8F9FA]/60 text-sm leading-relaxed">Stake-based consensus mechanism</p>
                             </div>
 
-                            <div className="text-center space-y-4 p-6">
-                                <div className="w-12 h-12 bg-slate-700/30 rounded-xl flex items-center justify-center mx-auto">
-                                    <Globe className="w-6 h-6 text-slate-300" />
+                            <div className="text-center space-y-4 p-6 rounded-3xl bg-[#1A1A2E]/40 border border-[#FF6B35]/10 hover:border-[#FF6B35]/30 transition-colors">
+                                <div className="w-12 h-12 bg-[#FF6B35]/20 rounded-xl flex items-center justify-center mx-auto">
+                                    <Globe className="w-6 h-6 text-[#FF6B35]" />
                                 </div>
-                                <h3 className="text-lg font-semibold text-white">Decentralized Network</h3>
-                                <p className="text-slate-400 text-sm leading-relaxed">No single point of failure</p>
+                                <h3 className="text-lg font-semibold text-white font-display">Decentralized Network</h3>
+                                <p className="text-[#F8F9FA]/60 text-sm leading-relaxed">No single point of failure</p>
                             </div>
 
-                            <div className="text-center space-y-4 p-6">
-                                <div className="w-12 h-12 bg-slate-700/30 rounded-xl flex items-center justify-center mx-auto">
-                                    <Zap className="w-6 h-6 text-slate-300" />
+                            <div className="text-center space-y-4 p-6 rounded-3xl bg-[#1A1A2E]/40 border border-[#FF6B35]/10 hover:border-[#FF6B35]/30 transition-colors">
+                                <div className="w-12 h-12 bg-[#FF6B35]/20 rounded-xl flex items-center justify-center mx-auto">
+                                    <Zap className="w-6 h-6 text-[#FF6B35]" />
                                 </div>
-                                <h3 className="text-lg font-semibold text-white">Real-time Updates</h3>
-                                <p className="text-slate-400 text-sm leading-relaxed">Instant verification status</p>
+                                <h3 className="text-lg font-semibold text-white font-display">Real-time Updates</h3>
+                                <p className="text-[#F8F9FA]/60 text-sm leading-relaxed">Instant verification status</p>
                             </div>
                         </div>
                     </div>
@@ -424,10 +430,10 @@ export default function Home() {
                 <section className="w-full py-24 px-4">
                     <div className="max-w-4xl mx-auto text-center space-y-12">
                         <div className="space-y-6">
-                            <h2 className="text-4xl md:text-5xl font-bold text-white">
+                            <h2 className="text-4xl md:text-5xl font-display font-extrabold text-white">
                                 Ready to Transform RWA Verification?
                             </h2>
-                            <p className="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
+                            <p className="text-xl text-[#F8F9FA]/80 max-w-3xl mx-auto leading-relaxed">
                                 Join the future of transparent, verifiable yield generation. Start building trust through cryptographic proof.
                             </p>
                         </div>
@@ -436,12 +442,12 @@ export default function Home() {
                             <Link href="/investor">
                                 <Button
                                     size="xl"
-                                    className="relative overflow-hidden bg-blue-600/20 hover:bg-blue-500/30 border-2 border-blue-400/50 hover:border-blue-300/70 text-white font-semibold px-10 py-5 rounded-xl backdrop-blur-sm transition-all duration-300 shadow-lg shadow-blue-500/20 hover:shadow-blue-400/40"
+                                    className="relative overflow-hidden bg-[#FF6B35] hover:bg-[#E85A2A] border-2 border-[#FF6B35] hover:border-[#E85A2A] text-white font-semibold px-10 py-5 rounded-full backdrop-blur-sm transition-all duration-300 shadow-lg shadow-[#FF6B35]/30 hover:shadow-[#FF6B35]/50 btn-ripple"
                                     style={{
-                                        boxShadow: '0 0 20px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                                        boxShadow: '0 0 20px rgba(255, 107, 53, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
                                     }}
                                 >
-                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400/10 via-blue-300/20 to-blue-400/10 opacity-0 hover:opacity-100 transition-opacity duration-300" />
+                                    <div className="absolute inset-0 bg-gradient-to-r from-[#FFD23F]/10 via-[#FFD23F]/20 to-[#FFD23F]/10 opacity-0 hover:opacity-100 transition-opacity duration-300" />
                                     <PieChart className="w-5 h-5 mr-2" />
                                     Start Investing
                                     <ArrowRight className="w-5 h-5 ml-2" />
@@ -452,12 +458,12 @@ export default function Home() {
                                 <Button
                                     variant="outline"
                                     size="xl"
-                                    className="relative overflow-hidden bg-slate-900/20 hover:bg-slate-800/30 border-2 border-slate-500/40 hover:border-slate-400/60 text-white font-semibold px-10 py-5 rounded-xl backdrop-blur-sm transition-all duration-300 shadow-lg shadow-slate-700/20"
+                                    className="relative overflow-hidden bg-[#004E89]/20 hover:bg-[#004E89]/30 border-2 border-[#004E89]/50 hover:border-[#004E89]/70 text-white font-semibold px-10 py-5 rounded-full backdrop-blur-sm transition-all duration-300 shadow-lg shadow-[#004E89]/20 btn-ripple"
                                     style={{
-                                        boxShadow: '0 0 15px rgba(100, 116, 139, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                                        boxShadow: '0 0 15px rgba(0, 78, 137, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                                     }}
                                 >
-                                    <div className="absolute inset-0 bg-gradient-to-r from-slate-400/5 via-slate-300/10 to-slate-400/5 opacity-0 hover:opacity-100 transition-opacity duration-300" />
+                                    <div className="absolute inset-0 bg-gradient-to-r from-[#004E89]/5 via-[#004E89]/10 to-[#004E89]/5 opacity-0 hover:opacity-100 transition-opacity duration-300" />
                                     <LayoutDashboard className="w-5 h-5 mr-2" />
                                     Issue Assets
                                     <ArrowRight className="w-5 h-5 ml-2" />
