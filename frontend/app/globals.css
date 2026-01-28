@@ -3,50 +3,119 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  /* YieldProof Brand Colors */
-  --primary: #FF6B35;
-  --primary-dark: #E85A2A;
-  --secondary: #004E89;
-  --accent: #FFD23F;
-  --dark: #1A1A2E;
-  --light: #F8F9FA;
+@layer base {
+  :root {
+    /* Dark Theme (Default) */
+    --background: 224 71% 4%;
+    /* #010816 */
+    --foreground: 213 31% 91%;
+    /* #e3e8f7 */
+    --card: 220 26% 9%;
+    /* #10141c */
+    --card-foreground: 213 31% 91%;
+    /* #e3e8f7 */
+    --popover: 224 71% 4%;
+    /* #010816 */
+    --popover-foreground: 213 31% 91%;
+    /* #e3e8f7 */
+    --primary: 16 100% 60%;
+    /* #ff6b35 */
+    --primary-foreground: 210 20% 95%;
+    /* #f2f4f7 */
+    --secondary: 205 100% 27%;
+    /* #004e89 */
+    --secondary-foreground: 210 20% 85%;
+    /* #d0d5e1 */
+    --muted: 220 14% 20%;
+    /* #2a2e38 */
+    --muted-foreground: 220 9% 46%;
+    /* #6c6f78 */
+    --accent: 46 100% 59%;
+    /* #ffd23f */
+    --accent-foreground: 240 30% 11%;
+    /* #13131c */
+    --destructive: 0 84% 60%;
+    /* #f43f3f */
+    --destructive-foreground: 210 20% 95%;
+    /* #f2f4f7 */
+    --success: 140 80% 40%;
+    --success-foreground: 140 80% 95%;
+    --border: 220 13% 15%;
+    /* #20242c */
+    --input: 220 13% 15%;
+    /* #20242c */
+    --ring: 16 100% 60%;
+    /* #ff6b35 */
+    --radius: 0.75rem;
+    --shadow-color: 213 31% 91%;
+    /* for dark mode shadows */
+  }
 
-  /* Tailwind CSS Variables (HSL format) */
-  --background: 240 30% 11%;
-  --foreground: 210 20% 95%;
-  --card: 240 25% 13%;
-  --card-foreground: 210 20% 95%;
-  --popover: 240 25% 13%;
-  --popover-foreground: 210 20% 95%;
-  --primary-hsl: 16 100% 60%;
-  --primary-foreground: 210 20% 95%;
-  --secondary-hsl: 205 100% 27%;
-  --secondary-foreground: 210 20% 85%;
-  --muted: 240 10% 40%;
-  --muted-foreground: 240 10% 60%;
-  --accent-hsl: 46 100% 59%;
-  --accent-foreground: 240 30% 11%;
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 210 20% 95%;
-  --border: 240 15% 20%;
-  --input: 240 15% 20%;
-  --ring: 16 100% 60%;
-  --radius: 0.75rem;
+  .light {
+    /* Light Theme */
+    --background: 0 0% 100%;
+    /* #ffffff */
+    --foreground: 224 71% 4%;
+    /* #010816 */
+    --card: 0 0% 96%;
+    /* #f5f5f5 */
+    --card-foreground: 224 71% 4%;
+    /* #010816 */
+    --popover: 0 0% 100%;
+    /* #ffffff */
+    --popover-foreground: 224 71% 4%;
+    /* #010816 */
+    --primary: 16 100% 60%;
+    /* #ff6b35 */
+    --primary-foreground: 210 20% 95%;
+    /* #f2f4f7 */
+    --secondary: 205 100% 27%;
+    /* #004e89 */
+    --secondary-foreground: 224 71% 4%;
+    /* #010816 */
+    --muted: 210 20% 90%;
+    /* #e0e4eb */
+    --muted-foreground: 220 9% 46%;
+    /* #6c6f78 */
+    --accent: 46 100% 59%;
+    /* #ffd23f */
+    --accent-foreground: 240 30% 11%;
+    /* #13131c */
+    --destructive: 0 84% 60%;
+    /* #f43f3f */
+    --destructive-foreground: 210 20% 95%;
+    /* #f2f4f7 */
+    --success: 140 80% 40%;
+    --success-foreground: 140 80% 10%;
+    --border: 210 20% 87%;
+    /* #d8dde6 */
+    --input: 210 20% 87%;
+    /* #d8dde6 */
+    --ring: 16 100% 60%;
+    /* #ff6b35 */
+    --shadow-color: 16 50% 30%;
+    /* for light mode shadows - dark desaturated orange */
+  }
 }
 
 @layer base {
   body {
-    @apply bg-[#1A1A2E] text-white min-h-screen antialiased;
+    @apply bg-background text-foreground min-h-screen antialiased;
     font-family: var(--font-dm-sans), system-ui, sans-serif;
+
     selection {
-      background: rgba(255, 107, 53, 0.3);
+      @apply bg-primary/30;
     }
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-syne), system-ui, sans-serif;
-    font-weight: 800;
+    font-weight: 700;
   }
 
   /* Custom scrollbar */
@@ -55,271 +124,95 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: rgba(26, 26, 46, 0.5);
+    @apply bg-background;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply rounded-full;
-    background: rgba(255, 107, 53, 0.5);
+    @apply rounded-full bg-primary/50;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 107, 53, 0.7);
+    @apply bg-primary/70;
   }
 }
 
 @layer components {
-  .glass-card {
-    @apply backdrop-blur-xl border rounded-3xl;
-    background: linear-gradient(135deg, rgba(26, 26, 46, 0.8) 0%, rgba(26, 26, 46, 0.6) 100%);
-    border-color: rgba(255, 107, 53, 0.2);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  }
-
-  .glass-card:hover {
-    border-color: rgba(255, 107, 53, 0.4);
-  }
-
-  .card-accent-bar {
-    @apply absolute top-0 left-0 w-full h-1 rounded-t-3xl;
-    background: linear-gradient(90deg, #FF6B35, #FFD23F);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.4s ease;
-  }
-
-  .group:hover .card-accent-bar {
-    transform: scaleX(1);
-  }
-
-  .accent-glow {
-    box-shadow: 0 0 20px rgba(255, 107, 53, 0.15);
-  }
-
-  .success-glow {
-    box-shadow: 0 0 20px rgba(34, 197, 94, 0.15);
-  }
-
-  .warning-glow {
-    box-shadow: 0 0 20px rgba(255, 210, 63, 0.15);
-  }
-
-  /* Button ripple effect */
-  .btn-ripple {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .btn-ripple::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    transform: translate(-50%, -50%);
-    transition: width 0.6s ease, height 0.6s ease;
-  }
-
-  .btn-ripple:hover::before {
-    width: 300px;
-    height: 300px;
-  }
-
-  /* Atmospheric background */
-  .atmospheric-bg {
-    position: relative;
-    background: linear-gradient(135deg, #004E89 0%, #1A1A2E 50%, #1A1A2E 100%);
-  }
-
-  .atmospheric-bg::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(circle at 20% 50%, rgba(255, 107, 53, 0.15) 0%, transparent 50%),
-      radial-gradient(circle at 80% 80%, rgba(255, 210, 63, 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 40% 20%, rgba(0, 78, 137, 0.2) 0%, transparent 50%);
-    pointer-events: none;
-  }
 
   /* Enhanced form styles */
   .form-input {
-    @apply rounded-2xl px-4 py-3 text-white transition-all duration-200;
-    background: rgba(26, 26, 46, 0.6);
-    border: 1px solid rgba(255, 107, 53, 0.2);
+    @apply rounded-lg px-4 py-3 text-foreground transition-colors duration-200 bg-background/50 border border-border;
   }
 
   .form-input:hover {
-    border-color: rgba(255, 107, 53, 0.4);
+    @apply border-primary/40;
   }
 
   .form-input:focus {
-    border-color: rgba(255, 107, 53, 0.6);
-    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
-    outline: none;
+    @apply border-primary/60 shadow-none outline-none ring-2 ring-primary/20;
   }
 
   .form-input::placeholder {
-    color: rgba(248, 249, 250, 0.4);
+    @apply text-muted-foreground/60;
   }
 
   .form-label {
-    @apply block text-sm font-medium mb-2;
-    color: rgba(248, 249, 250, 0.8);
+    @apply block text-sm font-medium mb-2 text-foreground/80;
   }
 
-  .form-error {
-    @apply text-red-400 text-sm mt-1;
+  /* RainbowKit Typography Overrides */
+  [data-rk] {
+    font-family: var(--font-dm-sans), system-ui, sans-serif !important;
   }
 
-  .form-success {
-    @apply text-emerald-400 text-sm mt-1;
+  /* Connect Button Typography */
+  [data-rk] button {
+    font-family: var(--font-dm-sans), system-ui, sans-serif !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.025em !important;
   }
 
-  /* Gradient text classes */
-  .gradient-text {
-    background: linear-gradient(135deg, #ffffff 0%, #e5e7eb 50%, #9ca3af 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+  /* Account Button Typography */
+  [data-rk] [data-testid="rk-account-button"] {
+    font-family: var(--font-dm-sans), system-ui, sans-serif !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.025em !important;
   }
 
-  .gradient-text-primary {
-    background: linear-gradient(135deg, #FF6B35 0%, #FFD23F 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+  /* Modal Typography */
+  [data-rk] [role="dialog"] {
+    font-family: var(--font-dm-sans), system-ui, sans-serif !important;
   }
 
-  .gradient-text-animated {
-    background: linear-gradient(-45deg, #FF6B35, #FFD23F, #FF6B35, #E85A2A);
-    background-size: 400% 400%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    animation: gradient-shift 3s ease-in-out infinite;
+  [data-rk] [role="dialog"] h1,
+  [data-rk] [role="dialog"] h2,
+  [data-rk] [role="dialog"] h3 {
+    font-family: var(--font-syne), system-ui, sans-serif !important;
+    font-weight: 700 !important;
   }
 
-  /* Floating animation for background elements */
-  .float-animation {
-    animation: float 6s ease-in-out infinite;
+  /* Wallet List Typography */
+  [data-rk] [data-testid="rk-wallet-option"] {
+    font-family: var(--font-dm-sans), system-ui, sans-serif !important;
+    font-weight: 500 !important;
   }
 
-  .float-animation-delayed {
-    animation: float 6s ease-in-out infinite;
-    animation-delay: 2s;
+  /* Network Switch Typography */
+  [data-rk] [data-testid="rk-chain-button"] {
+    font-family: var(--font-dm-sans), system-ui, sans-serif !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.025em !important;
   }
 
-  .float-animation-slow {
-    animation: float 8s ease-in-out infinite;
-    animation-delay: 4s;
+  /* Address Display Typography */
+  [data-rk] [data-testid="rk-address-button"] {
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace !important;
+    font-weight: 400 !important;
+    letter-spacing: 0.05em !important;
   }
 
-  /* Staggered fade in animation */
-  .stagger-in {
-    opacity: 0;
-    transform: translateY(30px);
-    animation: stagger-in 0.8s ease forwards;
+  /* Balance Display Typography */
+  [data-rk] [data-testid="rk-balance"] {
+    font-family: var(--font-dm-sans), system-ui, sans-serif !important;
+    font-weight: 500 !important;
   }
-
-  .delay-1 { animation-delay: 0.1s; }
-  .delay-2 { animation-delay: 0.2s; }
-  .delay-3 { animation-delay: 0.3s; }
-  .delay-4 { animation-delay: 0.4s; }
-  .delay-5 { animation-delay: 0.5s; }
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0px) rotate(0deg);
-  }
-  33% {
-    transform: translateY(-10px) rotate(1deg);
-  }
-  66% {
-    transform: translateY(5px) rotate(-1deg);
-  }
-}
-
-@keyframes gradient-shift {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-@keyframes stagger-in {
-  0% {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Custom dropdown styling for dark theme */
-select option {
-  background-color: #1A1A2E !important;
-  color: white !important;
-  padding: 8px 12px;
-}
-
-select option:checked {
-  background-color: #FF6B35 !important;
-  color: white !important;
-}
-
-select option:hover {
-  background-color: rgba(255, 107, 53, 0.3) !important;
-  color: white !important;
-}
-
-/* Ensure dropdown arrow is visible */
-select::-ms-expand {
-  display: none;
-}
-
-/* Firefox dropdown styling */
-select {
-  -moz-appearance: none;
-  -webkit-appearance: none;
-}
-
-/* ConnectButton styling to match site design */
-.connect-button-wrapper button[data-testid="rk-connect-button"] {
-  @apply hover:bg-opacity-80 text-white font-light px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-sm;
-  background: rgba(255, 107, 53, 0.2);
-  border: 1px solid rgba(255, 107, 53, 0.4);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.connect-button-wrapper button[data-testid="rk-connect-button"]:hover {
-  transform: translateY(-1px);
-  background: rgba(255, 107, 53, 0.3);
-  border-color: rgba(255, 107, 53, 0.6);
-  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-}
-
-.connect-button-wrapper button[data-testid="rk-account-button"] {
-  @apply hover:bg-opacity-80 text-white font-light px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-sm;
-  background: rgba(255, 107, 53, 0.2);
-  border: 1px solid rgba(255, 107, 53, 0.4);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.connect-button-wrapper button[data-testid="rk-account-button"]:hover {
-  transform: translateY(-1px);
-  background: rgba(255, 107, 53, 0.3);
-  border-color: rgba(255, 107, 53, 0.6);
-  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }

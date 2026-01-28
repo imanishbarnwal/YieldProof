@@ -18,9 +18,9 @@ export function WalletButton() {
             <Button
                 variant="outline"
                 onClick={() => disconnect()}
-                className="gap-2 border-emerald-500/20 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-300"
+                className="gap-2 border-success/20 bg-success/10 text-success hover:bg-success/20 hover:text-success-foreground"
             >
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
                 {formatAddress(address)}
             </Button>
         );
@@ -30,7 +30,7 @@ export function WalletButton() {
         <Button
             onClick={() => connect({ connector: connectors[0] })}
             disabled={isPending}
-            className="gap-2 bg-slate-100 text-slate-900 hover:bg-white"
+            className="gap-2 bg-muted text-foreground hover:bg-muted/80"
         >
             {isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

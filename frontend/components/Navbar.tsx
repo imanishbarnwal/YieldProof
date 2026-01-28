@@ -4,11 +4,20 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, ShieldCheck, PieChart } from 'lucide-react';
+import { LayoutDashboard, ShieldCheck, PieChart, Sun, Moon } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useTheme } from 'next-themes';
+import { useEffect, useState } from 'react';
+import { Button } from './ui/Button';
 
 export default function Navbar() {
     const pathname = usePathname();
+    const { theme, setTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const navItems = [
         { name: 'Issuer', href: '/issuer', icon: LayoutDashboard },
@@ -16,12 +25,16 @@ export default function Navbar() {
         { name: 'Investor', href: '/investor', icon: PieChart },
     ];
 
+    const toggleTheme = () => {
+        setTheme(theme === 'dark' ? 'light' : 'dark');
+    };
+
     return (
-        <nav className="sticky top-0 z-50 w-full glass-card border-b border-[#FF6B35]/20 flex h-16 items-center justify-between px-6">
+        <nav className="sticky top-0 z-50 w-full bg-card/50 backdrop-blur-lg border-b border-border/50 flex h-16 items-center justify-between px-6">
             {/* Logo / Brand */}
             <div className="flex items-center gap-8">
                 <Link href="/" className="flex items-center group">
-                    <span className="text-xl font-bold font-display text-white group-hover:text-[#FF6B35] transition-colors duration-300 tracking-wide">
+                    <span className="text-xl font-bold font-display text-foreground group-hover:text-primary transition-colors duration-300 tracking-wide">
                         YieldProof
                     </span>
                 </Link>
@@ -39,17 +52,17 @@ export default function Navbar() {
                                     className={cn(
                                         "flex items-center gap-2 px-4 py-2 text-sm font-light rounded-full transition-all duration-300 tracking-wide relative overflow-hidden group",
                                         isActive
-                                            ? "bg-[#FF6B35]/10 text-white border border-[#FF6B35]/30 shadow-lg shadow-[#FF6B35]/10"
-                                            : "text-[#F8F9FA]/80 hover:text-white hover:bg-[#FF6B35]/10 border border-transparent hover:border-[#FF6B35]/20"
+                                            ? "bg-primary/10 text-foreground border border-primary/30 shadow-lg shadow-primary/10"
+                                            : "text-muted-foreground hover:text-foreground hover:bg-primary/10 border border-transparent hover:border-primary/20"
                                     )}
                                 >
                                     {/* Subtle gradient overlay for active state */}
                                     {isActive && (
-                                        <div className="absolute inset-0 bg-gradient-to-r from-[#FF6B35]/10 via-[#FFD23F]/5 to-[#FF6B35]/10" />
+                                        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/5 to-primary/10" />
                                     )}
 
                                     {/* Hover shimmer effect */}
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FF6B35]/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
 
                                     <div className="relative z-10 flex items-center gap-2">
                                         <Icon className="w-4 h-4" />
@@ -62,14 +75,25 @@ export default function Navbar() {
                 </div>
             </div>
 
-            {/* Right Side - Wallet */}
-            <ConnectButton
-                showBalance={false}
-                accountStatus={{
-                    smallScreen: 'avatar',
-                    largeScreen: 'full',
-                }}
-            />
+            {/* Right Side */}
+            <div className="flex items-center gap-4">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleTheme}
+                    aria-label="Toggle theme"
+                >
+                    {mounted && theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                </Button>
+
+                <ConnectButton
+                    showBalance={false}
+                    accountStatus={{
+                        smallScreen: 'avatar',
+                        largeScreen: 'full',
+                    }}
+                />
+            </div>
         </nav>
     );
 }

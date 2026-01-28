@@ -4,19 +4,20 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Providers from "@/app/providers";
 import { ContractGuardrail } from "@/components/ContractGuardrail";
+import { ToastProvider } from "@/components/ui/Toast";
 
 const syne = Syne({
     subsets: ["latin"],
     variable: "--font-syne",
     display: 'swap',
-    weight: ['400', '600', '700', '800'],
+    weight: ['600', '700'], // Refined weights: 600 for subheadings, 700 for primary headings
 });
 
 const dmSans = DM_Sans({
     subsets: ["latin"],
     variable: "--font-dm-sans",
     display: 'swap',
-    weight: ['400', '500', '700'],
+    weight: ['400', '500'], // Refined weights: 400 for body, 500 for labels
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -44,15 +45,17 @@ export default function RootLayout({
 }) {
     return (
         <html lang="en" className={`dark ${syne.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}>
-            <body className={`${dmSans.className} antialiased bg-[#1A1A2E] text-white`}>
+            <body className={`${dmSans.className} antialiased bg-background text-foreground`}>
                 <Providers>
-                    <ContractGuardrail />
-                    <div className="relative flex min-h-screen flex-col">
-                        <Navbar />
-                        <main className="flex-1">
-                            {children}
-                        </main>
-                    </div>
+                    <ToastProvider>
+                        <ContractGuardrail />
+                        <div className="relative flex min-h-screen flex-col">
+                            <Navbar />
+                            <main className="flex-1">
+                                {children}
+                            </main>
+                        </div>
+                    </ToastProvider>
                 </Providers>
             </body>
         </html>

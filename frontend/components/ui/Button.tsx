@@ -8,24 +8,24 @@ import { Loader2 } from "lucide-react"
 import { motion, HTMLMotionProps } from "framer-motion"
 
 const buttonVariants = cva(
-    "inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B35]/50 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 tracking-wide relative overflow-hidden group btn-ripple",
+    "inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 tracking-wide relative overflow-hidden group",
     {
         variants: {
             variant: {
-                default: "bg-[#1A1A2E]/80 hover:bg-[#1A1A2E] text-white shadow-lg border border-[#FF6B35]/20 hover:border-[#FF6B35]/40 rounded-full",
-                primary: "bg-[#FF6B35] hover:bg-[#E85A2A] text-white shadow-lg font-semibold rounded-full border border-[#FF6B35]",
-                secondary: "bg-[#004E89] hover:bg-[#004E89]/80 text-white shadow-lg border border-[#004E89]/50 rounded-full backdrop-blur-sm",
-                outline: "border-2 border-[#FF6B35]/30 bg-[#1A1A2E]/50 text-white hover:bg-[#FF6B35]/10 hover:border-[#FF6B35]/50 backdrop-blur-sm rounded-full",
-                ghost: "text-[#F8F9FA]/80 hover:bg-[#FF6B35]/10 hover:text-white rounded-full",
-                destructive: "bg-red-700 hover:bg-red-600 text-white shadow-lg rounded-full border border-red-600/50",
-                success: "bg-emerald-700 hover:bg-emerald-600 text-white shadow-lg rounded-full border border-emerald-600/50",
-                link: "text-[#F8F9FA]/60 underline-offset-4 hover:underline hover:text-[#FF6B35] rounded-full",
+                default: "bg-background hover:bg-muted text-foreground shadow-lg border border-border/50 hover:border-border rounded-lg",
+                primary: "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg font-medium rounded-lg border border-primary",
+                secondary: "bg-secondary hover:bg-secondary/90 text-secondary-foreground shadow-lg border border-secondary/50 rounded-lg",
+                outline: "border-2 border-primary/30 bg-background/50 text-foreground hover:bg-primary/10 hover:border-primary/50 backdrop-blur-sm rounded-lg",
+                ghost: "text-foreground/80 hover:bg-primary/10 hover:text-foreground rounded-lg",
+                destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-lg",
+                success: "bg-success text-success-foreground hover:bg-success/90 rounded-lg",
+                link: "text-foreground/80 underline-offset-4 hover:underline hover:text-primary rounded-lg",
             },
             size: {
                 default: "h-11 px-6 py-3",
                 sm: "h-9 px-4 py-2 text-xs",
                 lg: "h-13 px-8 py-4 text-base",
-                xl: "h-16 px-10 py-5 text-lg font-semibold",
+                xl: "h-16 px-10 py-5 text-lg font-medium",
                 icon: "h-11 w-11",
             },
         },
@@ -63,19 +63,16 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
                 className={cn(buttonVariants({ variant, size, className }))}
                 ref={ref}
                 disabled={isLoading || props.disabled}
-                whileHover={{ 
-                    scale: 1.02,
+                whileHover={{
+                    y: -2,
                     transition: { duration: 0.2, ease: "easeOut" }
                 }}
-                whileTap={{ 
+                whileTap={{
                     scale: 0.98,
                     transition: { duration: 0.1, ease: "easeInOut" }
                 }}
                 {...props}
             >
-                {/* Subtle shimmer effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FF6B35]/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
-                
                 <div className="relative z-10 flex items-center justify-center">
                     {isLoading && (
                         <motion.div

@@ -1,12 +1,13 @@
 "use client";
 
 import '@rainbow-me/rainbowkit/styles.css';
-import { getDefaultConfig, RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
+import { getDefaultConfig, RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { WagmiProvider } from 'wagmi';
 import { mantleSepolia } from '@/app/config/chains';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Suspense } from 'react';
 import Loading from '@/components/ui/Loading';
+import { ThemeProvider } from 'next-themes';
 
 const config = getDefaultConfig({
     appName: 'YieldProof',
@@ -39,17 +40,14 @@ export default function Providers({
         <Suspense fallback={<Loading />}>
             <WagmiProvider config={config}>
                 <QueryClientProvider client={queryClient}>
-                    <RainbowKitProvider
-                        theme={darkTheme({
-                            accentColor: "#6366f1",
-                            accentColorForeground: "white",
-                            borderRadius: "large",
-                        })}
-                        modalSize="compact"
-                        initialChain={mantleSepolia}
-                    >
-                        {children}
-                    </RainbowKitProvider>
+                    <ThemeProvider attribute="class" defaultTheme="dark">
+                        <RainbowKitProvider
+                            modalSize="compact"
+                            initialChain={mantleSepolia}
+                        >
+                            {children}
+                        </RainbowKitProvider>
+                    </ThemeProvider>
                 </QueryClientProvider>
             </WagmiProvider>
         </Suspense>

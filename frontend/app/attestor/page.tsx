@@ -360,14 +360,14 @@ export default function AttestorPage() {
     const isProcessing = isWritePending || isConfirming;
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white">
+        <div className="min-h-screen bg-background page-transition">
             <div className="max-w-7xl mx-auto px-6 py-8">
                 {/* Hero Section */}
                 <AnimatedSection className="mb-12">
                     <div className="text-center space-y-8 max-w-4xl mx-auto">
                         <div className="flex items-center justify-center gap-3 mb-6">
                             <Badge variant={isRegistered ? "success" : "warning"} className="px-4 py-2 text-sm font-medium rounded-full" pulse>
-                                <div className={`w-2 h-2 ${isRegistered ? 'bg-emerald-400' : 'bg-amber-400'} rounded-full mr-2 animate-pulse`} />
+                                <div className={`w-2 h-2 ${isRegistered ? 'bg-accent' : 'bg-destructive'} rounded-full mr-2 animate-pulse`} />
                                 {isRegistered ? 'Active Attestor' : 'Registration Required'}
                             </Badge>
                             <Badge variant="default" className="px-4 py-2 text-sm font-medium rounded-full">
@@ -376,31 +376,31 @@ export default function AttestorPage() {
                             </Badge>
                         </div>
                         <div className="space-y-6">
-                            <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-tight font-inter">
+                            <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-tight">
                                 Attestor Dashboard
                             </h1>
-                            <p className="text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed font-light">
+                            <p className="text-xl max-w-3xl mx-auto leading-relaxed font-light">
                                 Verify yield disclosures and earn rewards through cryptographic attestation and economic consensus.
                             </p>
                         </div>
 
                         {/* Stats Grid */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 max-w-4xl mx-auto">
-                            <div className="text-center space-y-2">
-                                <div className="text-2xl font-bold text-white">{attestorStats.totalStaked.toFixed(2)}</div>
-                                <div className="text-sm text-slate-400">MNT Staked</div>
+                            <div className="text-center space-y-2 p-4 rounded-3xl bg-card/70 border border-primary/20">
+                                <div className="text-2xl font-bold font-display">{attestorStats.totalStaked.toFixed(2)}</div>
+                                <div className="text-sm">MNT Staked</div>
                             </div>
-                            <div className="text-center space-y-2">
-                                <div className="text-2xl font-bold text-white">{attestorStats.totalAttestations}</div>
-                                <div className="text-sm text-slate-400">Total Attestations</div>
+                            <div className="text-center space-y-2 p-4 rounded-3xl bg-card/70 border border-primary/20">
+                                <div className="text-2xl font-bold font-display">{attestorStats.totalAttestations}</div>
+                                <div className="text-sm">Total Attestations</div>
                             </div>
-                            <div className="text-center space-y-2">
-                                <div className="text-2xl font-bold text-white">{attestorStats.accuracyRate.toFixed(0)}%</div>
-                                <div className="text-sm text-slate-400">Accuracy Rate</div>
+                            <div className="text-center space-y-2 p-4 rounded-3xl bg-card/70 border border-primary/20">
+                                <div className="text-2xl font-bold font-display">{attestorStats.accuracyRate.toFixed(0)}%</div>
+                                <div className="text-sm">Accuracy Rate</div>
                             </div>
-                            <div className="text-center space-y-2">
-                                <div className="text-2xl font-bold text-white">{attestorStats.rewardsEarned.toFixed(2)}</div>
-                                <div className="text-sm text-slate-400">MNT Earned</div>
+                            <div className="text-center space-y-2 p-4 rounded-3xl bg-card/70 border border-primary/20">
+                                <div className="text-2xl font-bold font-display">{attestorStats.rewardsEarned.toFixed(2)}</div>
+                                <div className="text-sm">MNT Earned</div>
                             </div>
                         </div>
                     </div>
@@ -413,39 +413,39 @@ export default function AttestorPage() {
                             <Card className="backdrop-blur-xl">
                                 <CardHeader>
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
-                                            <ShieldCheck className="w-5 h-5 text-white" />
+                                        <div className="w-10 h-10 bg-primary/20 border border-primary/30 rounded-lg flex items-center justify-center">
+                                            <ShieldCheck className="w-5 h-5" />
                                         </div>
                                         <div>
-                                            <CardTitle className="text-white">Attestor Status</CardTitle>
-                                            <CardDescription className="text-slate-400">Your verification power</CardDescription>
+                                            <CardTitle>Attestor Status</CardTitle>
+                                            <CardDescription>Your verification power</CardDescription>
                                         </div>
                                     </div>
                                 </CardHeader>
                                 <CardContent className="space-y-6">
                                     {/* Registration Status */}
-                                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-indigo-500/10 to-purple-500/5 rounded-lg border border-indigo-500/20">
+                                    <div className="flex items-center justify-between p-4 bg-primary/10 rounded-lg border border-primary/20">
                                         <div>
-                                            <p className="text-white font-medium">Registration</p>
-                                            <p className="text-slate-400 text-sm">{isRegistered ? 'Active' : 'Required'}</p>
+                                            <p className="font-medium">Registration</p>
+                                            <p className="text-sm">{isRegistered ? 'Active' : 'Required'}</p>
                                         </div>
-                                        <div className={`w-3 h-3 rounded-full ${isRegistered ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                                        <div className={`w-3 h-3 rounded-full ${isRegistered ? 'bg-accent' : 'bg-destructive'}`} />
                                     </div>
 
                                     {/* Current Stake */}
                                     <div className="space-y-3">
                                         <div className="flex justify-between items-center">
-                                            <span className="text-slate-400 text-sm">Current Stake</span>
-                                            <span className="text-white font-mono text-lg">{parseFloat(currentStake).toFixed(2)} MNT</span>
+                                            <span className="text-sm">Current Stake</span>
+                                            <span className="font-mono text-lg">{parseFloat(currentStake).toFixed(2)} MNT</span>
                                         </div>
                                         <div className="flex justify-between items-center">
-                                            <span className="text-slate-400 text-sm">Trust Score</span>
-                                            <span className="text-emerald-400 font-mono">{attestorStats.trustScore.toFixed(0)}/100</span>
+                                            <span className="text-sm">Trust Score</span>
+                                            <span className="font-mono">{attestorStats.trustScore.toFixed(0)}/100</span>
                                         </div>
                                     </div>
 
                                     {/* Staking Form */}
-                                    <div className="space-y-4 pt-4 border-t border-slate-700">
+                                    <div className="space-y-4 pt-4 border-t border-border">
                                         <Input
                                             label="Stake Amount (MNT)"
                                             type="number"
@@ -459,38 +459,35 @@ export default function AttestorPage() {
 
                                         <Button
                                             onClick={handleStake}
-                                            disabled={!isConnected || isProcessing || !stakeAmount}
-                                            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium"
+                                            isLoading={isProcessing}
+                                            disabled={!isConnected || !stakeAmount}
+                                            variant="primary"
+                                            className="w-full"
                                         >
-                                            {isProcessing ? (
-                                                <>
-                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                    Processing...
-                                                </>
-                                            ) : (
+                                            {!isProcessing ? (
                                                 <>
                                                     <Plus className="mr-2 h-4 w-4" />
                                                     {isRegistered ? 'Add Stake' : 'Register & Stake'}
                                                 </>
-                                            )}
+                                            ) : null}
                                         </Button>
                                     </div>
                                     {!isRegistered && (
                                         <div className="space-y-3">
-                                            <div className="flex items-start gap-2 p-3 bg-amber-900/20 border border-amber-500/30 rounded-lg">
-                                                <Info className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
-                                                <div className="text-xs text-amber-300">
+                                            <div className="flex items-start gap-2 p-3 bg-accent/20 border border-accent/30 rounded-lg">
+                                                <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                                <div className="text-xs">
                                                     <p className="font-medium">Registration Required</p>
-                                                    <p className="text-amber-400/80 mt-1">Stake MNT to become an attestor and start earning rewards.</p>
+                                                    <p className="mt-1">Stake MNT to become an attestor and start earning rewards.</p>
                                                 </div>
                                             </div>
 
                                             {/* Smart Contract Information */}
-                                            <div className="flex items-start gap-2 p-3 bg-emerald-900/20 border border-emerald-500/30 rounded-lg">
-                                                <DollarSign className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
-                                                <div className="text-xs text-emerald-300">
+                                            <div className="flex items-start gap-2 p-3 bg-primary/20 border border-primary/30 rounded-lg">
+                                                <DollarSign className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                                <div className="text-xs">
                                                     <p className="font-medium">Smart Contract Updated!</p>
-                                                    <p className="text-emerald-400/80 mt-1">
+                                                    <p className="mt-1">
                                                         Enhanced with improved attestor tracking and automatic gas optimization for better reliability.
                                                     </p>
                                                 </div>
@@ -506,28 +503,29 @@ export default function AttestorPage() {
                             <Card className="backdrop-blur-xl">
                                 <CardHeader>
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-lg flex items-center justify-center shadow-lg">
-                                            <BarChart3 className="w-5 h-5 text-white" />
+                                        <div className="w-10 h-10 bg-accent/20 border border-accent/30 rounded-lg flex items-center justify-center">
+                                            <BarChart3 className="w-5 h-5" />
                                         </div>
                                         <div>
-                                            <CardTitle className="text-white">Performance</CardTitle>
-                                            <CardDescription className="text-slate-400">Your attestation metrics</CardDescription>
+                                            <CardTitle>Performance</CardTitle>
+                                            <CardDescription>Your attestation metrics</CardDescription>
                                         </div>
+
                                     </div>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="space-y-3">
                                         <div className="flex justify-between items-center">
-                                            <span className="text-slate-400 text-sm">Success Rate</span>
-                                            <span className="text-emerald-400 font-mono">{attestorStats.accuracyRate.toFixed(1)}%</span>
+                                            <span className="text-sm">Success Rate</span>
+                                            <span className="font-mono">{attestorStats.accuracyRate.toFixed(1)}%</span>
                                         </div>
                                         <div className="flex justify-between items-center">
-                                            <span className="text-slate-400 text-sm">Verified Claims</span>
-                                            <span className="text-white font-mono">{attestorStats.successfulAttestations}</span>
+                                            <span className="text-sm">Verified Claims</span>
+                                            <span className="font-mono">{attestorStats.successfulAttestations}</span>
                                         </div>
                                         <div className="flex justify-between items-center">
-                                            <span className="text-slate-400 text-sm">Rewards Earned</span>
-                                            <span className="text-emerald-400 font-mono">{attestorStats.rewardsEarned.toFixed(2)} MNT</span>
+                                            <span className="text-sm">Rewards Earned</span>
+                                            <span className="font-mono">{attestorStats.rewardsEarned.toFixed(2)} MNT</span>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -539,7 +537,7 @@ export default function AttestorPage() {
                         {/* Tab Navigation & Search */}
                         <AnimatedSection delay={0.3}>
                             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                                <div className="flex bg-slate-800/50 rounded-lg p-1 border border-slate-700/50">
+                                <div className="flex bg-muted/50 rounded-lg p-1 border border-border">
                                     {[
                                         { key: 'pending', label: 'Pending Verification', count: pendingClaims.length, icon: Clock },
                                         { key: 'attested', label: 'Attested', count: attestedClaims.length, icon: Eye },
@@ -549,8 +547,8 @@ export default function AttestorPage() {
                                             key={key}
                                             onClick={() => setSelectedTab(key as any)}
                                             className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${selectedTab === key
-                                                ? 'bg-indigo-600 text-white shadow-lg'
-                                                : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                                                ? 'bg-primary shadow-lg'
+                                                : 'hover:bg-muted'
                                                 }`}
                                         >
                                             <Icon className="w-4 h-4" />
@@ -578,7 +576,7 @@ export default function AttestorPage() {
                                             refetchClaimStakes();
                                             refetchAttestorLists();
                                         }}
-                                        className="text-slate-400 hover:text-white"
+                                        className="hover:bg-muted"
                                     >
                                         <RefreshCw className="w-4 h-4" />
                                     </Button>
@@ -589,13 +587,13 @@ export default function AttestorPage() {
                         <AnimatedSection delay={0.4}>
                             <div className="space-y-4">
                                 {!isConnected ? (
-                                    <Card className="backdrop-blur-xl">
+                                    <Card>
                                         <CardContent className="text-center py-12">
-                                            <div className="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                <ShieldCheck className="w-8 h-8 text-slate-500" />
+                                            <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                <ShieldCheck className="w-8 h-8" />
                                             </div>
-                                            <h3 className="text-lg font-medium text-slate-300 mb-2">Connect Your Wallet</h3>
-                                            <p className="text-slate-500 text-sm max-w-sm mx-auto">
+                                            <h3 className="text-lg font-medium mb-2">Connect Your Wallet</h3>
+                                            <p className="text-sm max-w-sm mx-auto">
                                                 Connect your wallet to view and attest to yield claims.
                                             </p>
                                         </CardContent>
@@ -603,32 +601,32 @@ export default function AttestorPage() {
                                 ) : isLoading ? (
                                     <StaggeredContainer key="loading" className="space-y-4" staggerDelay={0.1}>
                                         {Array.from({ length: 3 }).map((_, i) => (
-                                            <Card key={i} className="backdrop-blur-xl animate-pulse">
+                                            <Card key={i} className="animate-pulse">
                                                 <CardContent className="p-6">
                                                     <div className="flex items-center justify-between">
                                                         <div className="space-y-3 flex-1">
-                                                            <div className="h-4 bg-slate-700 rounded w-1/3"></div>
-                                                            <div className="h-3 bg-slate-800 rounded w-1/2"></div>
-                                                            <div className="h-3 bg-slate-800 rounded w-1/4"></div>
+                                                            <div className="h-4 bg-muted rounded w-1/3"></div>
+                                                            <div className="h-3 bg-muted/50 rounded w-1/2"></div>
+                                                            <div className="h-3 bg-muted/50 rounded w-1/4"></div>
                                                         </div>
-                                                        <div className="h-10 w-24 bg-slate-700 rounded"></div>
+                                                        <div className="h-10 w-24 bg-muted rounded"></div>
                                                     </div>
                                                 </CardContent>
                                             </Card>
                                         ))}
                                     </StaggeredContainer>
                                 ) : filteredClaims.length === 0 ? (
-                                    <Card className="backdrop-blur-xl">
+                                    <Card>
                                         <CardContent className="text-center py-12">
-                                            <div className="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                <FileText className="w-8 h-8 text-slate-500" />
+                                            <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                <FileText className="w-8 h-8" />
                                             </div>
-                                            <h3 className="text-lg font-medium text-slate-300 mb-2">
+                                            <h3 className="text-lg font-medium mb-2">
                                                 {selectedTab === 'pending' ? 'No Claims to Verify' :
                                                     selectedTab === 'attested' ? 'No Pending Attestations' :
                                                         'No Attestation History'}
                                             </h3>
-                                            <p className="text-slate-500 text-sm max-w-sm mx-auto">
+                                            <p className="text-sm max-w-sm mx-auto">
                                                 {selectedTab === 'pending' ? 'All claims have been verified or no new claims are available.' :
                                                     selectedTab === 'attested' ? 'You have no pending attestations waiting for finalization.' :
                                                         'You haven\'t completed any attestations yet.'}
@@ -638,7 +636,7 @@ export default function AttestorPage() {
                                 ) : (
                                     <StaggeredContainer key={selectedTab} className="space-y-4" staggerDelay={0.1}>
                                         {filteredClaims.map((claim) => (
-                                            <Card key={claim.id} className="backdrop-blur-xl hover:bg-slate-800/30 transition-all duration-300">
+                                            <Card key={claim.id} className="hover:bg-muted/30 transition-all duration-300">
                                                 <CardContent className="p-6">
                                                     <div className="flex items-start justify-between">
                                                         <div className="flex-1 space-y-4">
@@ -646,54 +644,54 @@ export default function AttestorPage() {
                                                             <div className="flex items-start justify-between">
                                                                 <div>
                                                                     <div className="flex items-center gap-3 mb-2">
-                                                                        <h3 className="text-lg font-semibold text-white">{claim.assetId}</h3>
+                                                                        <h3 className="text-lg font-semibold">{claim.assetId}</h3>
                                                                         <Badge variant={getStatusColor(claim.status) as any}>
                                                                             {getStatusLabel(claim.status)}
                                                                         </Badge>
                                                                     </div>
-                                                                    <p className="text-slate-400 text-sm">Period: {claim.period}</p>
+                                                                    <p className="text-sm">Period: {claim.period}</p>
                                                                 </div>
                                                                 <div className="text-right">
-                                                                    <p className="text-2xl font-bold text-emerald-400">
+                                                                    <p className="text-2xl font-bold">
                                                                         {claim.yieldAmount.toLocaleString(undefined, {
                                                                             minimumFractionDigits: 0,
                                                                             maximumFractionDigits: 6
                                                                         })} MNT
                                                                     </p>
-                                                                    <p className="text-slate-500 text-sm">Claimed Yield</p>
+                                                                    <p className="text-sm">Claimed Yield</p>
                                                                 </div>
                                                             </div>
 
                                                             {/* Metrics */}
                                                             <div className="grid grid-cols-3 gap-4">
-                                                                <div className="text-center p-3 bg-slate-800/30 rounded-lg">
-                                                                    <p className="text-slate-400 text-xs">Attestors</p>
-                                                                    <p className="text-white font-mono">
+                                                                <div className="text-center p-3 bg-muted/30 rounded-lg">
+                                                                    <p className="text-xs">Attestors</p>
+                                                                    <p className="font-mono">
                                                                         {claim.attestorCount}/{claim.requiredAttestors}
                                                                     </p>
                                                                 </div>
-                                                                <div className="text-center p-3 bg-slate-800/30 rounded-lg">
-                                                                    <p className="text-slate-400 text-xs">Total Stake</p>
-                                                                    <p className="text-white font-mono">
+                                                                <div className="text-center p-3 bg-muted/30 rounded-lg">
+                                                                    <p className="text-xs">Total Stake</p>
+                                                                    <p className="font-mono">
                                                                         {parseFloat(claim.currentBacking || '0').toFixed(2)} MNT
                                                                     </p>
                                                                 </div>
-                                                                <div className="text-center p-3 bg-slate-800/30 rounded-lg">
-                                                                    <p className="text-slate-400 text-xs">Progress</p>
-                                                                    <p className="text-white font-mono">
+                                                                <div className="text-center p-3 bg-muted/30 rounded-lg">
+                                                                    <p className="text-xs">Progress</p>
+                                                                    <p className="font-mono">
                                                                         {Math.round((claim.attestorCount || 0) / (claim.requiredAttestors || 1) * 100)}%
                                                                     </p>
                                                                 </div>
                                                             </div>
                                                             {/* Progress Bar */}
                                                             <div className="space-y-2">
-                                                                <div className="flex justify-between text-xs text-slate-400">
+                                                                <div className="flex justify-between text-xs">
                                                                     <span>Attestation Progress</span>
                                                                     <span>{claim.attestorCount} / {claim.requiredAttestors} required</span>
                                                                 </div>
-                                                                <div className="w-full bg-slate-800 rounded-full h-2">
+                                                                <div className="w-full bg-muted rounded-full h-2">
                                                                     <div
-                                                                        className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all duration-500"
+                                                                        className="bg-gradient-to-r from-primary to-accent h-2 rounded-full transition-all duration-500"
                                                                         style={{
                                                                             width: `${Math.min(100, ((claim.attestorCount || 0) / (claim.requiredAttestors || 1)) * 100)}%`
                                                                         }}
@@ -702,10 +700,10 @@ export default function AttestorPage() {
                                                             </div>
 
                                                             {/* Document Link */}
-                                                            <div className="flex items-center justify-between pt-2 border-t border-slate-700">
+                                                            <div className="flex items-center justify-between pt-2 border-t border-border">
                                                                 <div className="flex items-center gap-2">
-                                                                    <FileText className="w-4 h-4 text-slate-400" />
-                                                                    <span className="text-xs text-slate-500 font-mono">
+                                                                    <FileText className="w-4 h-4" />
+                                                                    <span className="text-xs font-mono">
                                                                         {claim.documentHash.slice(0, 20)}...
                                                                     </span>
                                                                 </div>
@@ -716,7 +714,7 @@ export default function AttestorPage() {
                                                                             : '#'}
                                                                         target="_blank"
                                                                         rel="noopener noreferrer"
-                                                                        className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 text-sm transition-colors"
+                                                                        className="flex items-center gap-1 text-sm transition-colors hover:opacity-80"
                                                                     >
                                                                         <ExternalLink className="w-3 h-3" />
                                                                         View Proof
@@ -729,24 +727,24 @@ export default function AttestorPage() {
                                                             <div className="flex flex-col gap-3 ml-6">
                                                                 <Button
                                                                     onClick={() => handleAttest(claim.id)}
-                                                                    disabled={!isConnected || isProcessing || parseFloat(currentStake) <= 0}
-                                                                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6"
+                                                                    isLoading={isProcessing}
+                                                                    disabled={!isConnected || parseFloat(currentStake) <= 0}
+                                                                    variant="primary"
+                                                                    className="px-6"
                                                                 >
-                                                                    {isProcessing ? (
-                                                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                                                    ) : (
+                                                                    {!isProcessing ? (
                                                                         <>
                                                                             <ShieldCheck className="w-4 h-4 mr-2" />
                                                                             Attest
                                                                         </>
-                                                                    )}
+                                                                    ) : null}
                                                                 </Button>
 
                                                                 <Button
                                                                     variant="outline"
                                                                     onClick={() => handleFlag(claim.id)}
-                                                                    disabled={isProcessing}
-                                                                    className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                                                                    isLoading={isProcessing}
+                                                                    className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive/80"
                                                                 >
                                                                     <Flag className="w-4 h-4 mr-2" />
                                                                     Flag
@@ -755,7 +753,7 @@ export default function AttestorPage() {
                                                         )}
 
                                                         {selectedTab === 'attested' && (
-                                                            <div className="flex items-center gap-2 ml-6 text-blue-400">
+                                                            <div className="flex items-center gap-2 ml-6">
                                                                 <Loader2 className="w-4 h-4 animate-spin" />
                                                                 <span className="text-sm font-medium">Verifying...</span>
                                                             </div>
@@ -763,28 +761,28 @@ export default function AttestorPage() {
 
                                                         {selectedTab === 'history' && (
                                                             <div className="flex flex-col gap-3 ml-6">
-                                                                <div className="bg-slate-800/50 rounded-lg p-4 border border-emerald-500/30">
+                                                                <div className="bg-muted/50 rounded-lg p-4 border border-accent/30">
                                                                     <div className="flex items-center gap-2 mb-3">
-                                                                        <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                                                                        <span className="text-sm font-semibold text-emerald-400">Attestation Complete</span>
+                                                                        <CheckCircle2 className="w-5 h-5" />
+                                                                        <span className="text-sm font-semibold">Attestation Complete</span>
                                                                     </div>
                                                                     <div className="space-y-2 text-sm">
                                                                         <div className="flex justify-between items-center">
-                                                                            <span className="text-slate-400">Required Attestors:</span>
-                                                                            <span className="text-white font-mono">{claim.requiredAttestors}</span>
+                                                                            <span>Required Attestors:</span>
+                                                                            <span className="font-mono">{claim.requiredAttestors}</span>
                                                                         </div>
                                                                         <div className="flex justify-between items-center">
-                                                                            <span className="text-slate-400">Attestors Reached:</span>
-                                                                            <span className="text-emerald-400 font-mono font-semibold">{claim.attestorCount}</span>
+                                                                            <span>Attestors Reached:</span>
+                                                                            <span className="font-mono font-semibold">{claim.attestorCount}</span>
                                                                         </div>
-                                                                        <div className="flex justify-between items-center pt-2 border-t border-slate-700">
-                                                                            <span className="text-slate-400">Criteria Fulfilled:</span>
-                                                                            <span className="text-emerald-400 font-mono font-bold">
+                                                                        <div className="flex justify-between items-center pt-2 border-t border-border">
+                                                                            <span>Criteria Fulfilled:</span>
+                                                                            <span className="font-mono font-bold">
                                                                                 {claim.attestorCount}/{claim.requiredAttestors} ✓
                                                                             </span>
                                                                         </div>
                                                                         <div className="flex justify-between items-center">
-                                                                            <span className="text-slate-400">Final Status:</span>
+                                                                            <span>Final Status:</span>
                                                                             <Badge variant={getStatusColor(claim.status) as any} className="ml-2">
                                                                                 {getStatusLabel(claim.status)}
                                                                             </Badge>
@@ -796,11 +794,11 @@ export default function AttestorPage() {
                                                     </div>
                                                     {/* Warning for insufficient stake */}
                                                     {selectedTab === 'pending' && parseFloat(currentStake) <= 0 && (
-                                                        <div className="mt-4 flex items-start gap-2 p-3 bg-amber-900/20 border border-amber-500/30 rounded-lg">
-                                                            <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
-                                                            <div className="text-xs text-amber-300">
+                                                        <div className="mt-4 flex items-start gap-2 p-3 bg-accent/20 border border-accent/30 rounded-lg">
+                                                            <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                                            <div className="text-xs">
                                                                 <p className="font-medium">Insufficient Stake</p>
-                                                                <p className="text-amber-400/80 mt-1">You must stake MNT to attest to claims.</p>
+                                                                <p className="mt-1">You must stake MNT to attest to claims.</p>
                                                             </div>
                                                         </div>
                                                     )}

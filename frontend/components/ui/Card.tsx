@@ -12,34 +12,32 @@ interface CardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, keyof HTM
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
     ({ className, hover = true, variant = "default", children, ...props }, ref) => {
         const variantClasses: Record<NonNullable<CardProps['variant']>, string> = {
-            default: "glass-card",
-            accent: "glass-card accent-glow border-[#FF6B35]/30",
-            success: "glass-card success-glow border-emerald-500/30",
-            warning: "glass-card warning-glow border-[#FFD23F]/30"
+            default: "bg-card border-border",
+            accent: "bg-card border-primary/30",
+            success: "bg-card border-success/30",
+            warning: "bg-card border-accent/30"
         }
 
         return (
             <motion.div
                 ref={ref}
                 className={cn(
-                    "rounded-3xl group relative",
+                    "rounded-lg group relative overflow-hidden",
                     variantClasses[variant as keyof typeof variantClasses],
-                    hover && "hover:shadow-2xl transition-all duration-300 hover:border-[#FF6B35]/40",
+                    hover && "transition-all duration-300 hover:border-primary/40 hover:shadow-lg-hover hover:-translate-y-1 dark:hover:shadow-primary/10",
                     className
                 )}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
                 whileHover={hover ? {
-                    y: -4,
+                    y: -2,
                     transition: { duration: 0.2 }
                 } : undefined}
                 {...props}
             >
                 {/* Top accent bar */}
                 <div className="card-accent-bar" />
-                {/* Subtle gradient overlay */}
-                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-[#FF6B35]/5 via-transparent to-[#FFD23F]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="relative z-10">
                     {children}
                 </div>
@@ -68,7 +66,7 @@ const CardTitle = React.forwardRef<
     <h3
         ref={ref}
         className={cn(
-            "text-lg font-semibold leading-none tracking-tight text-white",
+            "text-lg font-semibold leading-none tracking-tight text-card-foreground",
             className
         )}
         {...props}
@@ -82,7 +80,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
     <p
         ref={ref}
-        className={cn("text-sm text-[#F8F9FA]/60 leading-relaxed", className)}
+        className={cn("text-sm text-muted-foreground leading-relaxed", className)}
         {...props}
     />
 ))

@@ -11,11 +11,11 @@ interface StatusBadgeProps {
 
 export function StatusBadge({ status, className, label }: StatusBadgeProps) {
     const styles = {
-        submitted: "bg-[#004E89]/10 text-[#F8F9FA]/70 border-[#004E89]/20",
-        attesting: "bg-[#FF6B35]/10 text-[#FF6B35] border-[#FF6B35]/20",
-        verified: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-        flagged: "bg-[#FFD23F]/10 text-[#FFD23F] border-[#FFD23F]/20",
-        rejected: "bg-destructive/10 text-destructive border-destructive/20",
+        submitted: "bg-secondary/10 text-secondary-foreground/70 border-secondary/20",
+        attesting: "bg-primary/10 text-primary border-primary/20",
+        verified: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20", // Consider adding a 'success' color to the theme
+        flagged: "bg-accent/10 text-accent-foreground border-accent/20",
+        rejected: "bg-destructive/10 text-destructive-foreground border-destructive/20",
     };
 
     const icons = {

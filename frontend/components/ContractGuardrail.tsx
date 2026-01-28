@@ -34,12 +34,12 @@ export function ContractGuardrail() {
     if (!isVisible) return null;
 
     return (
-        <div className="fixed top-0 left-0 right-0 z-[100] bg-red-600 text-white px-4 py-3 shadow-xl flex items-center justify-center gap-3">
+        <div className="fixed top-0 left-0 right-0 z-[100] bg-destructive text-destructive-foreground px-4 py-3 shadow-xl flex items-center justify-center gap-3">
             <AlertTriangle className="w-5 h-5 animate-pulse" />
             <div className="font-semibold">
                 SYSTEM ERROR: {errorMessage}
             </div>
-            <div className="text-sm bg-red-800 px-2 py-1 rounded font-mono">
+            <div className="text-sm bg-destructive/80 px-2 py-1 rounded font-mono">
                 {CONTRACTS.YieldProof.address}
             </div>
         </div>
