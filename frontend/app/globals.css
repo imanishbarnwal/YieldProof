@@ -159,6 +159,113 @@
     @apply block text-sm font-medium mb-2 text-foreground/80;
   }
 
+  /* Select dropdown option styling */
+  select option {
+    @apply bg-card text-foreground;
+    background-color: hsl(var(--card)) !important;
+    color: hsl(var(--foreground)) !important;
+  }
+
+  select option:checked {
+    @apply bg-primary text-primary-foreground;
+    background-color: hsl(var(--primary)) !important;
+    color: hsl(var(--primary-foreground)) !important;
+  }
+
+  select option:hover {
+    @apply bg-muted;
+    background-color: hsl(var(--muted)) !important;
+  }
+
+  /* Custom select styling */
+  .custom-select {
+    color-scheme: dark;
+    box-shadow: none !important;
+  }
+
+  .custom-select:focus {
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  /* Remove any browser default shadows from select elements */
+  select {
+    box-shadow: none !important;
+  }
+
+  select:focus {
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  /* Remove shadows from buttons used as selects */
+  button[role="combobox"],
+  button[aria-haspopup="listbox"] {
+    box-shadow: none !important;
+  }
+
+  button[role="combobox"]:focus,
+  button[aria-haspopup="listbox"]:focus {
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  .custom-select option {
+    background-color: hsl(var(--card)) !important;
+    color: hsl(var(--foreground)) !important;
+    padding: 8px 12px !important;
+  }
+
+  .custom-select option:checked,
+  .custom-select option:hover {
+    background-color: hsl(var(--primary)) !important;
+    color: hsl(var(--primary-foreground)) !important;
+  }
+
+  /* Additional browser-specific select option styling */
+  select.custom-select {
+    background-color: hsl(var(--card)) !important;
+    color: hsl(var(--foreground)) !important;
+  }
+
+  /* Force option styling for all browsers */
+  select.custom-select option {
+    background: hsl(var(--card)) !important;
+    color: hsl(var(--foreground)) !important;
+  }
+
+  select.custom-select option:checked {
+    background: hsl(var(--primary)) !important;
+    color: hsl(var(--primary-foreground)) !important;
+  }
+
+  /* Firefox specific */
+  @-moz-document url-prefix() {
+    .custom-select option {
+      background-color: hsl(var(--card)) !important;
+      color: hsl(var(--foreground)) !important;
+    }
+
+    .custom-select option:checked {
+      background-color: hsl(var(--primary)) !important;
+      color: hsl(var(--primary-foreground)) !important;
+    }
+  }
+
+  /* WebKit browsers (Chrome, Safari, Edge) */
+  @media screen and (-webkit-min-device-pixel-ratio:0) {
+    .custom-select option {
+      background-color: hsl(var(--card)) !important;
+      color: hsl(var(--foreground)) !important;
+    }
+
+    .custom-select option:hover,
+    .custom-select option:checked {
+      background-color: hsl(var(--primary)) !important;
+      color: hsl(var(--primary-foreground)) !important;
+    }
+  }
+
   /* RainbowKit Typography Overrides */
   [data-rk] {
     font-family: var(--font-dm-sans), system-ui, sans-serif !important;
@@ -214,5 +321,68 @@
   [data-rk] [data-testid="rk-balance"] {
     font-family: var(--font-dm-sans), system-ui, sans-serif !important;
     font-weight: 500 !important;
+  }
+
+  /* RainbowKit Color Overrides */
+  [data-rk] {
+    --rk-colors-accentColor: hsl(var(--primary)) !important;
+    --rk-colors-accentColorForeground: hsl(var(--primary-foreground)) !important;
+    --rk-colors-actionButtonBorder: hsl(var(--border)) !important;
+    --rk-colors-actionButtonBorderMobile: hsl(var(--border)) !important;
+    --rk-colors-actionButtonSecondaryBackground: hsl(var(--muted)) !important;
+    --rk-colors-closeButton: hsl(var(--muted-foreground)) !important;
+    --rk-colors-closeButtonBackground: hsl(var(--muted)) !important;
+    --rk-colors-connectButtonBackground: hsl(var(--primary)) !important;
+    --rk-colors-connectButtonBackgroundError: hsl(var(--destructive)) !important;
+    --rk-colors-connectButtonInnerBackground: hsl(var(--primary)) !important;
+    --rk-colors-connectButtonText: hsl(var(--primary-foreground)) !important;
+    --rk-colors-connectButtonTextError: hsl(var(--destructive-foreground)) !important;
+    --rk-colors-connectionIndicator: hsl(var(--success)) !important;
+    --rk-colors-downloadBottomCardBackground: hsl(var(--card)) !important;
+    --rk-colors-downloadTopCardBackground: hsl(var(--card)) !important;
+    --rk-colors-error: hsl(var(--destructive)) !important;
+    --rk-colors-generalBorder: hsl(var(--border)) !important;
+    --rk-colors-generalBorderDim: hsl(var(--border)) !important;
+    --rk-colors-menuItemBackground: hsl(var(--card)) !important;
+    --rk-colors-modalBackdrop: hsla(var(--background), 0.8) !important;
+    --rk-colors-modalBackground: hsl(var(--card)) !important;
+    --rk-colors-modalBorder: hsl(var(--border)) !important;
+    --rk-colors-modalText: hsl(var(--card-foreground)) !important;
+    --rk-colors-modalTextDim: hsl(var(--muted-foreground)) !important;
+    --rk-colors-modalTextSecondary: hsl(var(--muted-foreground)) !important;
+    --rk-colors-profileAction: hsl(var(--muted)) !important;
+    --rk-colors-profileActionHover: hsl(var(--muted)) !important;
+    --rk-colors-profileForeground: hsl(var(--card)) !important;
+    --rk-colors-selectedOptionBorder: hsl(var(--primary)) !important;
+    --rk-colors-standby: hsl(var(--muted-foreground)) !important;
+  }
+
+  /* Connect Button Specific Styling */
+  [data-rk] button[data-testid="rk-connect-button"] {
+    background: hsl(var(--primary)) !important;
+    color: hsl(var(--primary-foreground)) !important;
+    border: 1px solid hsl(var(--primary)) !important;
+    border-radius: 0.75rem !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+  }
+
+  [data-rk] button[data-testid="rk-connect-button"]:hover {
+    background: hsl(var(--primary)) !important;
+    opacity: 0.9 !important;
+    transform: translateY(-1px) !important;
+  }
+
+  /* Account Button Styling */
+  [data-rk] button[data-testid="rk-account-button"] {
+    background: hsl(var(--muted)) !important;
+    color: hsl(var(--foreground)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 0.75rem !important;
+  }
+
+  [data-rk] button[data-testid="rk-account-button"]:hover {
+    background: hsl(var(--muted)) !important;
+    opacity: 0.8 !important;
   }
 }

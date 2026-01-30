@@ -30,6 +30,7 @@ contract YieldProof {
         string documentHash;    // IPFS hash or link to supporting documents/proofs
         address issuer;         // Address of the user submitting the claim
         ClaimStatus status;     // Current status of the claim
+        uint256 submittedAt;    // Block timestamp when the claim was submitted
     }
 
     // ============================
@@ -60,7 +61,8 @@ contract YieldProof {
         uint256 indexed claimId,
         address indexed issuer,
         string assetId,
-        uint256 yieldAmount
+        uint256 yieldAmount,
+        uint256 submittedAt
     );
 
     /// @notice Emitted when a claim's status is changed by the admin.
@@ -95,8 +97,8 @@ contract YieldProof {
     // ============================
 
     /**
-     * @notice Allows an issuer to submit a new yield claim.
-     * @dev The status is initialized to 'Pending'.
+     * @notice Allows an issuer to submit a new yield claim with attestation fee.
+     * @dev The status is initialized to 'Pending'. Issuer must pay attestation fee.
      * @param _assetId The string identifier of the asset (e.g., "MANTLE-ETH").
      * @param _period The string identifier for the period (e.g., "OCT-2023").
      * @param _yieldAmount The numeric amount of yield being claimed.
@@ -107,7 +109,11 @@ contract YieldProof {
         string calldata _period,
         uint256 _yieldAmount,
         string calldata _documentHash
-    ) external {
+    ) external payable {
+        // Require attestation fee payment
+        uint256 requiredFee = attestorRegistry.getAttestationFee();
+        require(msg.value >= requiredFee, "YieldProof: insufficient attestation fee");
+        
         uint256 claimId = nextClaimId;
         nextClaimId++;
 
@@ -118,10 +124,25 @@ contract YieldProof {
             yieldAmount: _yieldAmount,
             documentHash: _documentHash,
             issuer: msg.sender,
-            status: ClaimStatus.Pending
+            status: ClaimStatus.Pending,
+            submittedAt: block.timestamp
         });
 
-        emit YieldClaimSubmitted(claimId, msg.sender, _assetId, _yieldAmount);
+        // Forward the fee to AttestorRegistry
+        (bool success, ) = address(attestorRegistry).call{value: msg.value}(
+            abi.encodeWithSignature("payAttestationFee()")
+        );
+        require(success, "YieldProof: failed to pay attestation fee");
+
+        emit YieldClaimSubmitted(claimId, msg.sender, _assetId, _yieldAmount, block.timestamp);
+    }
+
+    /**
+     * @notice Gets the required attestation fee from the AttestorRegistry.
+     * @return The attestation fee amount in wei.
+     */
+    function getRequiredAttestationFee() external view returns (uint256) {
+        return attestorRegistry.getAttestationFee();
     }
 
     /**

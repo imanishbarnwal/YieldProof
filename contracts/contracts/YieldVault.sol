@@ -32,6 +32,12 @@ contract YieldVault {
     /// @notice Tracks whether a claim has been claimed to prevent double-claiming
     mapping(uint256 => bool) public isClaimed;
 
+    /// @notice Tracks whether a user has claimed yield from a specific claim
+    mapping(address => mapping(uint256 => bool)) public hasClaimedYield;
+
+    /// @notice Total yield amount from verified and claimed disclosures
+    uint256 public verifiedDistribution;
+
     // ============================
     // Events
     // ============================
@@ -39,6 +45,7 @@ contract YieldVault {
     event Deposited(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
     event YieldUnlocked(uint256 indexed claimId, uint256 totalStake);
+    event YieldDistributed(address indexed user, uint256 amount, uint256 indexed claimId);
 
     // ============================
     // Constructor
@@ -90,19 +97,19 @@ contract YieldVault {
     }
 
     /**
-     * @notice Checks if a specific claim has enough attestor stake to be "unlocked".
+     * @notice Checks if a specific claim has enough attestor count to be "unlocked".
      * @param claimId The ID of the claim to check.
      * @return true if the claim is sufficiently attested.
      */
     function canUnlockYield(uint256 claimId) public view returns (bool) {
-        uint256 currentStake = attestorRegistry.totalStakePerClaim(claimId);
-        return currentStake >= minTotalStake;
+        uint256 attestorCount = attestorRegistry.attestorCountPerClaim(claimId);
+        uint256 minRequiredAttestors = 3; // Should match MIN_REQUIRED_ATTESTORS from YieldProof
+        return attestorCount >= minRequiredAttestors && !attestorRegistry.isFlagged(claimId);
     }
 
     /**
      * @notice Unlocks yield/rewards for a claim if it meets the stake threshold.
-     * @dev This is a simplified action. In a real protocol, this might
-     *      mint tokens, release escrowed funds, or distribute rewards to attestors.
+     * @dev Distributes the claimed yield proportionally to all vault depositors.
      *      This function can only be called once per claim and marks it as claimed.
      * @param claimId The ID of the claim to unlock.
      */
@@ -113,11 +120,65 @@ contract YieldVault {
         // Mark the claim as claimed to prevent double-claiming
         isClaimed[claimId] = true;
 
-        // NOTE: Actual distribution logic would go here.
-        // For the MVP, we just emit the event to signal the off-chain indexer/UI.
-        // In production, this would distribute yield proportionally to all depositors.
+        // Get the yield amount from the YieldProof contract
+        (,,, uint256 yieldAmount,,,,) = yieldProof.claims(claimId);
+        
+        // Ensure we have enough balance in the vault to distribute
+        require(address(this).balance >= yieldAmount, "YieldVault: insufficient vault balance for distribution");
+        
+        // Track verified distribution
+        verifiedDistribution += yieldAmount;
+
+        // Calculate and add the caller's proportional share to their balance
+        if (totalDeposits > 0 && balances[msg.sender] > 0) {
+            uint256 callerShare = (balances[msg.sender] * yieldAmount) / totalDeposits;
+            balances[msg.sender] += callerShare;
+            
+            emit YieldDistributed(msg.sender, callerShare, claimId);
+        }
 
         uint256 stake = attestorRegistry.totalStakePerClaim(claimId);
         emit YieldUnlocked(claimId, stake);
+    }
+
+    /**
+     * @notice Allows any depositor to claim their proportional share of a verified yield claim.
+     * @dev More gas-efficient than distributing to all users at once.
+     * @param claimId The ID of the verified claim to claim yield from.
+     */
+    function claimYieldShare(uint256 claimId) external {
+        require(isClaimed[claimId], "YieldVault: claim not yet unlocked");
+        require(balances[msg.sender] > 0, "YieldVault: no deposit balance");
+        require(!hasClaimedYield[msg.sender][claimId], "YieldVault: already claimed this yield");
+
+        // Mark as claimed for this user
+        hasClaimedYield[msg.sender][claimId] = true;
+
+        // Get the yield amount from the YieldProof contract
+        (,,, uint256 yieldAmount,,,,) = yieldProof.claims(claimId);
+        
+        // Calculate user's proportional share
+        uint256 userShare = (balances[msg.sender] * yieldAmount) / totalDeposits;
+        
+        // Add to user's balance
+        balances[msg.sender] += userShare;
+        
+        emit YieldDistributed(msg.sender, userShare, claimId);
+    }
+
+    /**
+     * @notice Calculates the total pending distributions (verified claims not yet unlocked).
+     * @dev This iterates through all claims, so gas cost increases with total claims.
+     *      For production, consider maintaining this as a state variable.
+     * @return pending The total yield amount of claims that can be unlocked but haven't been.
+     */
+    function getPendingDistributions() external view returns (uint256 pending) {
+        uint256 totalClaims = yieldProof.getTotalClaims();
+        for (uint256 i = 0; i < totalClaims; i++) {
+            if (!isClaimed[i] && canUnlockYield(i)) {
+                (,,, uint256 yieldAmount,,,,) = yieldProof.claims(i);
+                pending += yieldAmount;
+            }
+        }
     }
 }

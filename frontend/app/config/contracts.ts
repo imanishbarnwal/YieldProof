@@ -4,10 +4,12 @@ export const MANTLE_SEPOLIA = {
 };
 
 export const CONTRACTS = {
-    // FINAL DEPLOYMENT - MANTLE SEPOLIA (Chain 5003)
-    // DO NOT REDEPLOY - JAN 2026
+    // NEW DEPLOYMENT - MANTLE SEPOLIA (Chain 5003) - JAN 2026 - Updated Economics + Lifetime Tracking
+    // AttestorRegistry: 0x1c152de6172BDB84b0871731Ef494d12C7691C07
+    // YieldProof: 0x723A0992D07Ed6e6789Fcdcfd63b05634302586c
+    // YieldVault: 0x671dA4C8D9277429e58fbFCa46C3163a17b97294
     AttestorRegistry: {
-        address: "0x226BA1F39135D7BCb2DE29365DF077D17b66Ca73",
+        address: "0x1c152de6172BDB84b0871731Ef494d12C7691C07",
         abi: [
             {
                 "inputs": [],
@@ -111,7 +113,7 @@ export const CONTRACTS = {
                     {
                         "indexed": true,
                         "internalType": "address",
-                        "name": "attestor",
+                        "name": "flagger",
                         "type": "address"
                     },
                     {
@@ -159,8 +161,72 @@ export const CONTRACTS = {
                         "type": "uint256"
                     }
                 ],
+                "name": "RewardAccrued",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "attestor",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
                 "name": "StakeAdded",
                 "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "uint256",
+                        "name": "claimId",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "bool",
+                        "name": "success",
+                        "type": "bool"
+                    }
+                ],
+                "name": "VerificationRecorded",
+                "type": "event"
+            },
+            {
+                "inputs": [],
+                "name": "MIN_REQUIRED_ATTESTORS",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "REWARD_PER_ATTESTATION",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
             },
             {
                 "inputs": [
@@ -179,18 +245,19 @@ export const CONTRACTS = {
                 "inputs": [
                     {
                         "internalType": "uint256",
-                        "name": "claimId",
+                        "name": "",
                         "type": "uint256"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "reason",
-                        "type": "string"
                     }
                 ],
-                "name": "flagClaim",
-                "outputs": [],
-                "stateMutability": "nonpayable",
+                "name": "attestorCountPerClaim",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
                 "type": "function"
             },
             {
@@ -221,6 +288,106 @@ export const CONTRACTS = {
                 "inputs": [
                     {
                         "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "attestorsList",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "claimId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "reason",
+                        "type": "string"
+                    }
+                ],
+                "name": "flagClaim",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "flagReasons",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "attestor",
+                        "type": "address"
+                    }
+                ],
+                "name": "getAttestorStats",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "totalAttestations",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "successful",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "rewards",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalClaimed",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "trustScore",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
                         "name": "claimId",
                         "type": "uint256"
                     }
@@ -231,6 +398,25 @@ export const CONTRACTS = {
                         "internalType": "address[]",
                         "name": "",
                         "type": "address[]"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "attestor",
+                        "type": "address"
+                    }
+                ],
+                "name": "getTrustScore",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
                     }
                 ],
                 "stateMutability": "view",
@@ -261,6 +447,25 @@ export const CONTRACTS = {
                 "type": "function"
             },
             {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "isFlagged",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
                 "inputs": [],
                 "name": "owner",
                 "outputs": [
@@ -271,6 +476,24 @@ export const CONTRACTS = {
                     }
                 ],
                 "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "claimId",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "success",
+                        "type": "bool"
+                    }
+                ],
+                "name": "recordVerification",
+                "outputs": [],
+                "stateMutability": "nonpayable",
                 "type": "function"
             },
             {
@@ -285,6 +508,25 @@ export const CONTRACTS = {
                 "name": "renounceOwnership",
                 "outputs": [],
                 "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "rewardsEarned",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
                 "type": "function"
             },
             {
@@ -315,12 +557,31 @@ export const CONTRACTS = {
             {
                 "inputs": [
                     {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "successfulAttestations",
+                "outputs": [
+                    {
                         "internalType": "uint256",
                         "name": "",
                         "type": "uint256"
                     }
                 ],
-                "name": "totalStakePerClaim",
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "totalAttestationsCount",
                 "outputs": [
                     {
                         "internalType": "uint256",
@@ -339,7 +600,7 @@ export const CONTRACTS = {
                         "type": "uint256"
                     }
                 ],
-                "name": "attestorCountPerClaim",
+                "name": "totalStakePerClaim",
                 "outputs": [
                     {
                         "internalType": "uint256",
@@ -362,11 +623,166 @@ export const CONTRACTS = {
                 "outputs": [],
                 "stateMutability": "nonpayable",
                 "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "claimId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "unflagClaim",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "claimId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "finalizeAndReward",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "claimRewards",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "payAttestationFee",
+                "outputs": [],
+                "stateMutability": "payable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getAttestationFee",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "pure",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getRewardPoolBalance",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "attestor",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "RewardsClaimed",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "issuer",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "AttestationFeePaid",
+                "type": "event"
+            },
+            {
+                "inputs": [],
+                "name": "ATTESTATION_FEE",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "totalRewardsClaimed",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "verificationRecorded",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
             }
         ]
     },
     YieldProof: {
-        address: "0x6D9b87f2550b3526A3a6A5CB2bC3673D35fb9c6C",
+        address: "0x723A0992D07Ed6e6789Fcdcfd63b05634302586c",
         abi: [
             {
                 "inputs": [
@@ -430,10 +846,29 @@ export const CONTRACTS = {
                         "internalType": "uint256",
                         "name": "yieldAmount",
                         "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "submittedAt",
+                        "type": "uint256"
                     }
                 ],
                 "name": "YieldClaimSubmitted",
                 "type": "event"
+            },
+            {
+                "inputs": [],
+                "name": "MIN_REQUIRED_ATTESTORS",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
             },
             {
                 "inputs": [],
@@ -505,18 +940,10 @@ export const CONTRACTS = {
                         "internalType": "enum YieldProof.ClaimStatus",
                         "name": "status",
                         "type": "uint8"
-                    }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "getTotalClaims",
-                "outputs": [
+                    },
                     {
                         "internalType": "uint256",
-                        "name": "",
+                        "name": "submittedAt",
                         "type": "uint256"
                     }
                 ],
@@ -525,7 +952,7 @@ export const CONTRACTS = {
             },
             {
                 "inputs": [],
-                "name": "MIN_REQUIRED_ATTESTORS",
+                "name": "getTotalClaims",
                 "outputs": [
                     {
                         "internalType": "uint256",
@@ -561,7 +988,20 @@ export const CONTRACTS = {
                 ],
                 "name": "submitClaim",
                 "outputs": [],
-                "stateMutability": "nonpayable",
+                "stateMutability": "payable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getRequiredAttestationFee",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
                 "type": "function"
             },
             {
@@ -598,7 +1038,7 @@ export const CONTRACTS = {
         ]
     },
     YieldVault: {
-        address: "0x55012496333900FC101890371dA5A72Ad079980D",
+        address: "0x671dA4C8D9277429e58fbFCa46C3163a17b97294",
         abi: [
             {
                 "inputs": [
@@ -737,6 +1177,19 @@ export const CONTRACTS = {
                 "type": "function"
             },
             {
+                "inputs": [],
+                "name": "getPendingDistributions",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "pending",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
                 "inputs": [
                     {
                         "internalType": "uint256",
@@ -792,6 +1245,19 @@ export const CONTRACTS = {
                 "name": "unlockYield",
                 "outputs": [],
                 "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "verifiedDistribution",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
                 "type": "function"
             },
             {

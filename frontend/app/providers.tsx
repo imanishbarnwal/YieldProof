@@ -1,7 +1,7 @@
 "use client";
 
 import '@rainbow-me/rainbowkit/styles.css';
-import { getDefaultConfig, RainbowKitProvider } from '@rainbow-me/rainbowkit';
+import { getDefaultConfig, RainbowKitProvider, darkTheme, lightTheme } from '@rainbow-me/rainbowkit';
 import { WagmiProvider } from 'wagmi';
 import { mantleSepolia } from '@/app/config/chains';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -31,6 +31,23 @@ const queryClient = new QueryClient({
     },
 });
 
+// Custom RainbowKit theme to match app colors
+const customDarkTheme = darkTheme({
+    accentColor: '#ff6b35', // Primary orange
+    accentColorForeground: '#f2f4f7',
+    borderRadius: 'medium',
+    fontStack: 'system',
+    overlayBlur: 'small',
+});
+
+const customLightTheme = lightTheme({
+    accentColor: '#ff6b35', // Primary orange
+    accentColorForeground: '#f2f4f7',
+    borderRadius: 'medium',
+    fontStack: 'system',
+    overlayBlur: 'small',
+});
+
 export default function Providers({
     children,
 }: {
@@ -40,10 +57,20 @@ export default function Providers({
         <Suspense fallback={<Loading />}>
             <WagmiProvider config={config}>
                 <QueryClientProvider client={queryClient}>
-                    <ThemeProvider attribute="class" defaultTheme="dark">
+                    {/* @ts-expect-error - next-themes ThemeProvider types issue with React 19 */}
+                    <ThemeProvider
+                        attribute="class"
+                        defaultTheme="dark"
+                        enableSystem={true}
+                        disableTransitionOnChange={true}
+                    >
                         <RainbowKitProvider
                             modalSize="compact"
                             initialChain={mantleSepolia}
+                            theme={{
+                                lightMode: customLightTheme,
+                                darkMode: customDarkTheme,
+                            }}
                         >
                             {children}
                         </RainbowKitProvider>

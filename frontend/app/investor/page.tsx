@@ -33,11 +33,13 @@ import {
     SortAsc,
     SortDesc,
     Search,
-    RefreshCw
+    RefreshCw,
+    Users
 } from 'lucide-react';
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useReadContracts } from 'wagmi';
+import { useAccount, useReadContract, useReadContracts } from 'wagmi';
 import { formatEther, parseEther, formatUnits, type Abi } from 'viem';
 import { CONTRACTS } from '@/app/config/contracts';
+import { useTransaction } from '@/hooks/useTransaction';
 
 // Types
 interface VaultPosition {
@@ -62,6 +64,7 @@ interface ActiveDisclosure {
     yourSharePercentage: number;
     isClaimed: boolean;
     proofHash: string;
+    canFinalize: boolean;
 }
 
 interface VaultMetrics {
@@ -91,9 +94,13 @@ export default function InvestorPage() {
     const [sortBy, setSortBy] = useState<'yieldAmount' | 'period' | 'status' | 'yourShare' | 'timestamp'>('timestamp');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-    // Contract Write Hook
-    const { writeContract, data: hash, isPending: isWritePending } = useWriteContract();
-    const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
+    // Transaction hooks
+    const { executeTransaction, isLoading: isTransactionLoading } = useTransaction({
+        onSuccess: () => {
+            refetchBalance();
+            refetchClaimedData();
+        }
+    });
 
     // Read user balance from YieldVault
     const { data: userBalance, refetch: refetchBalance } = useReadContract({
@@ -138,7 +145,23 @@ export default function InvestorPage() {
         abi: CONTRACTS.YieldProof.abi as Abi,
         functionName: 'MIN_REQUIRED_ATTESTORS'
     });
-    const minRequiredAttestors = minRequiredAttestorsData ? Number(minRequiredAttestorsData) : 3;
+    const minRequiredAttestors = minRequiredAttestorsData !== undefined ? Number(minRequiredAttestorsData) : null;
+
+    // Read verified distribution from YieldVault
+    const { data: verifiedDistributionData } = useReadContract({
+        address: CONTRACTS.YieldVault.address as `0x${string}`,
+        abi: CONTRACTS.YieldVault.abi as Abi,
+        functionName: 'verifiedDistribution',
+        query: { refetchInterval: 5000 }
+    });
+
+    // Read pending distributions from YieldVault
+    const { data: pendingDistributionsData } = useReadContract({
+        address: CONTRACTS.YieldVault.address as `0x${string}`,
+        abi: CONTRACTS.YieldVault.abi as Abi,
+        functionName: 'getPendingDistributions',
+        query: { refetchInterval: 5000 }
+    });
 
     // Read stake data for claims
     const { data: claimStakesData } = useReadContracts({
@@ -157,6 +180,17 @@ export default function InvestorPage() {
             address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
             abi: CONTRACTS.AttestorRegistry.abi as Abi,
             functionName: 'attestorCountPerClaim',
+            args: [BigInt(id)]
+        })),
+        query: { enabled: claimIndexes.length > 0 }
+    });
+
+    // Read verification recorded status for claims
+    const { data: verificationRecordedData } = useReadContracts({
+        contracts: claimIndexes.map(id => ({
+            address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
+            abi: CONTRACTS.AttestorRegistry.abi as Abi,
+            functionName: 'verificationRecorded',
             args: [BigInt(id)]
         })),
         query: { enabled: claimIndexes.length > 0 }
@@ -186,6 +220,8 @@ export default function InvestorPage() {
         const totalStake = stakeResult?.result ? Number(formatEther(stakeResult.result as bigint)) : 0;
         const attestorCountResult = attestorCountData?.[index];
         const attestorCount = attestorCountResult?.result ? Number(attestorCountResult.result) : 0;
+        const verificationRecordedResult = verificationRecordedData?.[index];
+        const isVerificationRecorded = verificationRecordedResult?.result ? Boolean(verificationRecordedResult.result) : false;
         const yieldAmount = Number(formatUnits(claim[3], 18)) || 0;
         const claimedResult = claimsClaimedData?.[index];
         const isClaimed = claimedResult?.result ? Boolean(claimedResult.result) : false;
@@ -194,18 +230,30 @@ export default function InvestorPage() {
         const userSharePercentage = totalDepositsEth > 0 ? (userBalanceEth / totalDepositsEth) * 100 : 0;
         const yourShareAmount = totalDepositsEth > 0 ? (userBalanceEth / totalDepositsEth) * yieldAmount : 0;
 
-        // Determine status based on claim status and attestor count
+        // Determine status based on attestor count and finalization state
         let status = 'submitted';
         let attestationProgress = 0;
+        const requiredAttestors = minRequiredAttestors ?? 3;
+        let canFinalize = false;
 
-        if (claim[6] === 1) { // ClaimStatus.Attested
+        if (claim[6] === 3) { // Flagged
+            status = 'attesting'; // Keep as attesting since flagged claims need resolution
+            attestationProgress = 0;
+        } else if (attestorCount >= requiredAttestors) {
+            // Has enough attestors - check if already finalized
+            if (isVerificationRecorded) {
+                status = 'verified';
+                attestationProgress = 100;
+            } else {
+                // Ready to be finalized
+                status = 'attesting';
+                attestationProgress = 100;
+                canFinalize = true;
+            }
+        } else if (attestorCount > 0) {
             status = 'attesting';
-            // Calculate progress based on attestor count, cap at 99% (never show 100% until Approved)
-            const rawProgress = (attestorCount / minRequiredAttestors) * 100;
+            const rawProgress = (attestorCount / requiredAttestors) * 100;
             attestationProgress = Math.min(99, rawProgress);
-        } else if (claim[6] === 2) { // ClaimStatus.Approved
-            status = 'verified';
-            attestationProgress = 100;
         }
 
         return {
@@ -219,7 +267,8 @@ export default function InvestorPage() {
             yourShare: yourShareAmount,
             yourSharePercentage: userSharePercentage,
             isClaimed,
-            proofHash: claim[4] ? `${claim[4].slice(0, 16)}...` : '0x997d8ca1388c...'
+            proofHash: claim[4] ? `${claim[4].slice(0, 16)}...` : 'N/A',
+            canFinalize
         };
     }).filter((d): d is NonNullable<typeof d> => d !== null)) || [];
 
@@ -266,96 +315,72 @@ export default function InvestorPage() {
             return sortOrder === 'asc' ? comparison : -comparison;
         });
 
-    // Calculate vault metrics
+    // Calculate vault metrics using on-chain data
+    const verifiedDistributionValue = verifiedDistributionData ? Number(formatEther(verifiedDistributionData as bigint)) : 0;
     const vaultMetrics = {
         principalEscrow: userBalanceEth,
-        verifiedDistribution: 0, // This would need additional contract logic
-        realizedPerformance: 0, // This would need additional contract logic
+        verifiedDistribution: verifiedDistributionValue,
+        realizedPerformance: totalDepositsEth > 0 ? (verifiedDistributionValue / totalDepositsEth) * 100 : 0,
         totalActiveDisclosures: filteredAndSortedDisclosures.length
     };
 
-    // Refetch data when transaction is confirmed
-    useEffect(() => {
-        if (isConfirmed) {
-            refetchBalance();
-            refetchClaimedData();
-        }
-    }, [isConfirmed, refetchBalance, refetchClaimedData]);
+    // Refetch data when transaction is confirmed - handled by useTransaction hook now
 
     const handleDeposit = async () => {
-        if (!isConnected) {
-            alert('Please connect your wallet first.');
-            return;
-        }
+        if (!isConnected || !depositAmount || parseFloat(depositAmount) <= 0) return;
 
-        if (!depositAmount || parseFloat(depositAmount) <= 0) {
-            alert('Please enter a valid deposit amount.');
-            return;
-        }
+        const transactionConfig: any = {
+            address: CONTRACTS.YieldVault.address as `0x${string}`,
+            abi: CONTRACTS.YieldVault.abi as Abi,
+            functionName: 'deposit',
+            value: parseEther(depositAmount)
+        };
 
-        try {
-            writeContract({
-                address: CONTRACTS.YieldVault.address as `0x${string}`,
-                abi: CONTRACTS.YieldVault.abi as Abi,
-                functionName: 'deposit',
-                value: parseEther(depositAmount)
-            });
-            setDepositAmount('');
-        } catch (error) {
-            console.error('Deposit failed:', error);
-            alert('Deposit failed. Please try again.');
-        }
+        executeTransaction(transactionConfig);
+        setDepositAmount('');
     };
 
     const handleClaimYield = async (claimId: string) => {
-        if (!isConnected) {
-            alert('Please connect your wallet first.');
-            return;
-        }
+        if (!isConnected) return;
 
-        try {
-            const claimIdBigInt = BigInt(claimId.replace('disc-', ''));
+        const claimIdBigInt = BigInt(claimId.replace('disc-', ''));
 
-            writeContract({
-                address: CONTRACTS.YieldVault.address as `0x${string}`,
-                abi: CONTRACTS.YieldVault.abi as Abi,
-                functionName: 'unlockYield',
-                args: [claimIdBigInt]
-            });
-        } catch (error) {
-            console.error('Claim yield failed:', error);
-            alert('Claim yield failed. Please try again.');
-        }
+        executeTransaction({
+            address: CONTRACTS.YieldVault.address as `0x${string}`,
+            abi: CONTRACTS.YieldVault.abi as Abi,
+            functionName: 'unlockYield',
+            args: [claimIdBigInt]
+        });
+    };
+
+    const handleFinalizeClaim = async (claimId: string) => {
+        if (!isConnected) return;
+
+        const claimIdBigInt = BigInt(claimId.replace('disc-', ''));
+
+        executeTransaction({
+            address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
+            abi: CONTRACTS.AttestorRegistry.abi as Abi,
+            functionName: 'finalizeAndReward',
+            args: [claimIdBigInt]
+        });
     };
 
     const handleWithdraw = async () => {
-        if (!isConnected) {
-            alert('Please connect your wallet first.');
-            return;
-        }
-
-        if (!withdrawAmount || parseFloat(withdrawAmount) <= 0) {
-            alert('Please enter a valid withdrawal amount.');
-            return;
-        }
+        if (!isConnected || !withdrawAmount || parseFloat(withdrawAmount) <= 0) return;
 
         if (parseFloat(withdrawAmount) > userBalanceEth) {
-            alert('Insufficient balance for withdrawal.');
+            // This validation should be handled by UI, but keeping for safety
             return;
         }
 
-        try {
-            writeContract({
-                address: CONTRACTS.YieldVault.address as `0x${string}`,
-                abi: CONTRACTS.YieldVault.abi as Abi,
-                functionName: 'withdraw',
-                args: [parseEther(withdrawAmount)]
-            });
-            setWithdrawAmount('');
-        } catch (error) {
-            console.error('Withdrawal failed:', error);
-            alert('Withdrawal failed. Please try again.');
-        }
+        executeTransaction({
+            address: CONTRACTS.YieldVault.address as `0x${string}`,
+            abi: CONTRACTS.YieldVault.abi as Abi,
+            functionName: 'withdraw',
+            args: [parseEther(withdrawAmount)]
+        });
+        setWithdrawAmount('');
     };
 
     const getStatusColor = (status: string) => {
@@ -451,7 +476,7 @@ export default function InvestorPage() {
                                         <select
                                             value={selectedVault}
                                             onChange={(e) => setSelectedVault(e.target.value)}
-                                            className="form-input w-full appearance-none cursor-pointer"
+                                            className="form-input w-full appearance-none cursor-pointer custom-select"
                                         >
                                             <option>YieldProof Demo Vault</option>
                                         </select>
@@ -466,12 +491,12 @@ export default function InvestorPage() {
 
                                     <Button
                                         onClick={handleDeposit}
-                                        isLoading={isWritePending || isConfirming}
+                                        isLoading={isTransactionLoading}
                                         disabled={!isConnected}
                                         variant="primary"
                                         className="w-full"
                                     >
-                                        {!isWritePending && !isConfirming ? (
+                                        {!isTransactionLoading ? (
                                             <>
                                                 <Plus className="mr-2 h-4 w-4" />
                                                 Add Capital
@@ -517,12 +542,12 @@ export default function InvestorPage() {
 
                                     <Button
                                         onClick={handleWithdraw}
-                                        isLoading={isWritePending || isConfirming}
+                                        isLoading={isTransactionLoading}
                                         disabled={!isConnected || userBalanceEth === 0}
-                                        variant="secondary"
+                                        variant="primary"
                                         className="w-full"
                                     >
-                                        {!isWritePending && !isConfirming ? (
+                                        {!isTransactionLoading ? (
                                             <>
                                                 <Minus className="mr-2 h-4 w-4" />
                                                 Withdraw
@@ -579,7 +604,7 @@ export default function InvestorPage() {
                                         <select
                                             value={statusFilter}
                                             onChange={(e) => setStatusFilter(e.target.value as any)}
-                                            className="w-full h-10 bg-muted/80 border border-border rounded-lg px-3 py-2 text-sm hover:border-primary/50 focus:border-primary/50 focus:ring-2 focus:ring-ring/20 transition-all duration-200 appearance-none cursor-pointer"
+                                            className="w-full h-10 bg-muted/80 border border-border rounded-lg px-3 py-2 text-sm hover:border-primary/50 focus:border-primary/50 focus:ring-2 focus:ring-ring/20 transition-all duration-200 appearance-none cursor-pointer custom-select"
                                             style={{
                                                 backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
                                                 backgroundPosition: 'right 0.5rem center',
@@ -600,7 +625,7 @@ export default function InvestorPage() {
                                         <select
                                             value={sortBy}
                                             onChange={(e) => setSortBy(e.target.value as any)}
-                                            className="h-10 bg-muted/80 border border-border rounded-lg px-3 py-2 text-sm min-w-[140px] hover:border-primary/50 focus:border-primary/50 focus:ring-2 focus:ring-ring/20 transition-all duration-200 appearance-none cursor-pointer"
+                                            className="h-10 bg-muted/80 border border-border rounded-lg px-3 py-2 text-sm min-w-[140px] hover:border-primary/50 focus:border-primary/50 focus:ring-2 focus:ring-ring/20 transition-all duration-200 appearance-none cursor-pointer custom-select"
                                             style={{
                                                 backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
                                                 backgroundPosition: 'right 0.5rem center',
@@ -720,6 +745,24 @@ export default function InvestorPage() {
                                                     <span className="font-medium">{disclosure.assetId}</span>
                                                 </div>
                                                 <div className="flex items-center gap-3">
+                                                    {disclosure.canFinalize && (
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={() => handleFinalizeClaim(disclosure.id)}
+                                                            isLoading={isTransactionLoading}
+                                                            disabled={!isConnected}
+                                                            variant="success"
+                                                        >
+                                                            {isTransactionLoading ? (
+                                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                            ) : (
+                                                                <>
+                                                                    <CheckCircle2 className="w-4 h-4 mr-1" />
+                                                                    Finalize
+                                                                </>
+                                                            )}
+                                                        </Button>
+                                                    )}
                                                     {disclosure.status === 'verified' && (
                                                         disclosure.isClaimed ? (
                                                             <Button
@@ -734,11 +777,11 @@ export default function InvestorPage() {
                                                             <Button
                                                                 size="sm"
                                                                 onClick={() => handleClaimYield(disclosure.id)}
-                                                                isLoading={isWritePending || isConfirming}
+                                                                isLoading={isTransactionLoading}
                                                                 disabled={!isConnected}
                                                                 variant="primary"
                                                             >
-                                                                {isWritePending || isConfirming ? (
+                                                                {isTransactionLoading ? (
                                                                     <Loader2 className="w-4 h-4 animate-spin" />
                                                                 ) : (
                                                                     <>
@@ -752,13 +795,13 @@ export default function InvestorPage() {
                                                 </div>
                                             </div>
 
-                                            <div className="grid grid-cols-3 gap-4 mb-3">
+                                            <div className="grid grid-cols-4 gap-4 mb-3">
                                                 <div>
                                                     <div className="text-xs">Period</div>
                                                     <div className="text-sm">{disclosure.period}</div>
                                                 </div>
                                                 <div>
-                                                    <div className="text-xs">Yield</div>
+                                                    <div className="text-xs">Total Yield</div>
                                                     <div className="text-sm">
                                                         {disclosure.yieldAmount.toLocaleString(undefined, {
                                                             minimumFractionDigits: 0,
@@ -767,11 +810,21 @@ export default function InvestorPage() {
                                                     </div>
                                                 </div>
                                                 <div>
+                                                    <div className="text-xs">Your Share</div>
+                                                    <div className="text-sm font-medium text-primary">
+                                                        {disclosure.yourShare.toLocaleString(undefined, {
+                                                            minimumFractionDigits: 0,
+                                                            maximumFractionDigits: 6
+                                                        })} MNT
+                                                    </div>
+                                                </div>
+                                                <div>
                                                     <div className="text-xs">Status</div>
                                                     <div className="text-sm">
-                                                        {disclosure.status === 'verified' ? 'Verified' :
-                                                            disclosure.status === 'attesting' ? `${disclosure.attestationProgress.toFixed(0)}% Complete` :
-                                                                'Pending'}
+                                                        {disclosure.canFinalize ? 'Ready to Finalize' :
+                                                            disclosure.status === 'verified' ? 'Verified' :
+                                                                disclosure.status === 'attesting' ? `${disclosure.attestationProgress.toFixed(0)}% Complete` :
+                                                                    'Pending'}
                                                     </div>
                                                 </div>
                                             </div>
@@ -804,31 +857,29 @@ export default function InvestorPage() {
 
                 {/* Expandable Sections */}
                 <div className="space-y-4">
+                    {/* Ecosystem Health Analytics */}
                     <AnimatedSection delay={0.5}>
-                        <Card className="p-4 cursor-pointer hover:bg-muted/40 transition-colors">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <Clock className="w-5 h-5" />
-                                    <span className="font-medium">Historical Payouts</span>
-                                </div>
-                                <ArrowRight className="w-5 h-5" />
-                            </div>
-                        </Card>
+                        <EcosystemHealthCard
+                            claimsData={claimsData}
+                            attestorCountData={attestorCountData}
+                            claimStakesData={claimStakesData}
+                            verificationRecordedData={verificationRecordedData}
+                            totalClaims={totalClaims}
+                            minRequiredAttestors={minRequiredAttestors}
+                        />
                     </AnimatedSection>
 
+                    {/* Verification Performance Analytics */}
                     <AnimatedSection delay={0.6}>
-                        <Card className="p-4 cursor-pointer hover:bg-muted/40 transition-colors">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <Target className="w-5 h-5" />
-                                    <span className="font-medium">Vault Mechanics & Status</span>
-                                </div>
-                                <ArrowRight className="w-5 h-5" />
-                            </div>
-                        </Card>
+                        <VerificationPerformanceCard
+                            activeDisclosures={activeDisclosures}
+                            userBalanceEth={userBalanceEth}
+                            totalDepositsEth={totalDepositsEth}
+                            verifiedDistributionValue={verifiedDistributionValue}
+                        />
                     </AnimatedSection>
 
-                    <AnimatedSection delay={0.7}>
+                    <AnimatedSection delay={0.9}>
                         <Card className="p-4 cursor-pointer hover:bg-muted/40 transition-colors opacity-50">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
@@ -842,5 +893,370 @@ export default function InvestorPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+// Ecosystem Health Analytics Component
+function EcosystemHealthCard({
+    claimsData,
+    attestorCountData,
+    claimStakesData,
+    verificationRecordedData,
+    totalClaims,
+    minRequiredAttestors
+}: {
+    claimsData: any;
+    attestorCountData: any;
+    claimStakesData: any;
+    verificationRecordedData: any;
+    totalClaims: number;
+    minRequiredAttestors: number | null;
+}) {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    // Calculate ecosystem health metrics from contract data
+    const ecosystemMetrics = React.useMemo(() => {
+        if (!claimsData || !attestorCountData || !claimStakesData || !verificationRecordedData) {
+            return {
+                totalClaims: 0,
+                verifiedClaims: 0,
+                verificationSuccessRate: 0,
+                averageAttestorsPerClaim: 0,
+                totalStakeDeployed: 0,
+                flaggedClaims: 0,
+                pendingClaims: 0,
+                averageStakePerClaim: 0
+            };
+        }
+
+        let verifiedCount = 0;
+        let flaggedCount = 0;
+        let pendingCount = 0;
+        let totalAttestors = 0;
+        let totalStake = 0;
+        let validClaims = 0;
+
+        claimsData.forEach((claimResult: any, index: number) => {
+            if (!claimResult.result) return;
+
+            const claim = claimResult.result as any[];
+            const attestorCount = attestorCountData[index]?.result ? Number(attestorCountData[index].result) : 0;
+            const stakeAmount = claimStakesData[index]?.result ? Number(formatEther(claimStakesData[index].result as bigint)) : 0;
+            const isVerified = verificationRecordedData[index]?.result ? Boolean(verificationRecordedData[index].result) : false;
+
+            validClaims++;
+            totalAttestors += attestorCount;
+            totalStake += stakeAmount;
+
+            // Check claim status
+            if (claim[6] === 3) { // Flagged
+                flaggedCount++;
+            } else if (isVerified) {
+                verifiedCount++;
+            } else {
+                pendingCount++;
+            }
+        });
+
+        const verificationSuccessRate = validClaims > 0 ? (verifiedCount / validClaims) * 100 : 0;
+        const averageAttestorsPerClaim = validClaims > 0 ? totalAttestors / validClaims : 0;
+        const averageStakePerClaim = validClaims > 0 ? totalStake / validClaims : 0;
+
+        return {
+            totalClaims: validClaims,
+            verifiedClaims: verifiedCount,
+            verificationSuccessRate,
+            averageAttestorsPerClaim,
+            totalStakeDeployed: totalStake,
+            flaggedClaims: flaggedCount,
+            pendingClaims: pendingCount,
+            averageStakePerClaim
+        };
+    }, [claimsData, attestorCountData, claimStakesData, verificationRecordedData]);
+
+    return (
+        <Card className="backdrop-blur-xl">
+            <CardHeader>
+                <div
+                    className="flex items-center justify-between cursor-pointer"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-accent/20 border border-accent/30 rounded-lg flex items-center justify-center">
+                            <ShieldCheck className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <CardTitle>Ecosystem Health Analytics</CardTitle>
+                            <CardDescription>
+                                Real-time verification system performance metrics
+                            </CardDescription>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Badge variant="success" className="px-3 py-1">
+                            {ecosystemMetrics.verificationSuccessRate.toFixed(1)}% Success Rate
+                        </Badge>
+                        <ArrowRight className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                    </div>
+                </div>
+            </CardHeader>
+
+            {isExpanded && (
+                <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div className="text-center space-y-2 p-3 rounded-lg bg-card/50 border border-border/50">
+                            <div className="text-xl font-bold">{ecosystemMetrics.totalClaims}</div>
+                            <div className="text-xs">Total Claims</div>
+                        </div>
+                        <div className="text-center space-y-2 p-3 rounded-lg bg-success/10 border border-success/30">
+                            <div className="text-xl font-bold text-success">{ecosystemMetrics.verifiedClaims}</div>
+                            <div className="text-xs">Verified</div>
+                        </div>
+                        <div className="text-center space-y-2 p-3 rounded-lg bg-warning/10 border border-warning/30">
+                            <div className="text-xl font-bold text-warning">{ecosystemMetrics.pendingClaims}</div>
+                            <div className="text-xs">Pending</div>
+                        </div>
+                        <div className="text-center space-y-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30">
+                            <div className="text-xl font-bold text-destructive">{ecosystemMetrics.flaggedClaims}</div>
+                            <div className="text-xs">Flagged</div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Users className="w-4 h-4" />
+                                <span className="text-sm font-medium">Attestor Participation</span>
+                            </div>
+                            <div className="text-2xl font-bold mb-1">
+                                {ecosystemMetrics.averageAttestorsPerClaim.toFixed(1)}
+                            </div>
+                            <div className="text-xs">
+                                Avg attestors per claim (min: {minRequiredAttestors || 3})
+                            </div>
+                        </div>
+
+                        <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Coins className="w-4 h-4" />
+                                <span className="text-sm font-medium">Economic Security</span>
+                            </div>
+                            <div className="text-2xl font-bold mb-1">
+                                {ecosystemMetrics.totalStakeDeployed.toFixed(1)}
+                            </div>
+                            <div className="text-xs">
+                                Total MNT staked across all claims
+                            </div>
+                        </div>
+
+                        <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Target className="w-4 h-4" />
+                                <span className="text-sm font-medium">Avg Stake Security</span>
+                            </div>
+                            <div className="text-2xl font-bold mb-1">
+                                {ecosystemMetrics.averageStakePerClaim.toFixed(1)}
+                            </div>
+                            <div className="text-xs">
+                                Average MNT staked per claim
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-4 p-3 bg-info/20 border border-info/30 rounded-lg">
+                        <div className="flex items-start gap-2">
+                            <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                            <div className="text-xs">
+                                <p className="font-medium">Ecosystem Health Indicators:</p>
+                                <p className="mt-1">
+                                    • <strong>Success Rate:</strong> {ecosystemMetrics.verificationSuccessRate.toFixed(1)}% of claims successfully verified
+                                    • <strong>Security:</strong> {ecosystemMetrics.totalStakeDeployed.toFixed(1)} MNT economic security deployed
+                                    • <strong>Participation:</strong> {ecosystemMetrics.averageAttestorsPerClaim.toFixed(1)} avg attestors (healthy: ≥{minRequiredAttestors || 3})
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </CardContent>
+            )}
+        </Card>
+    );
+}
+
+// Verification Performance Analytics Component
+function VerificationPerformanceCard({
+    activeDisclosures,
+    userBalanceEth,
+    totalDepositsEth,
+    verifiedDistributionValue
+}: {
+    activeDisclosures: any[];
+    userBalanceEth: number;
+    totalDepositsEth: number;
+    verifiedDistributionValue: number;
+}) {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    // Calculate performance metrics
+    const performanceMetrics = React.useMemo(() => {
+        const totalYieldAvailable = activeDisclosures.reduce((sum, d) => sum + d.yieldAmount, 0);
+        const verifiedYield = activeDisclosures
+            .filter(d => d.status === 'verified')
+            .reduce((sum, d) => sum + d.yieldAmount, 0);
+
+        const userSharePercentage = totalDepositsEth > 0 ? (userBalanceEth / totalDepositsEth) * 100 : 0;
+        const userPotentialYield = totalYieldAvailable * (userSharePercentage / 100);
+        const userVerifiedYield = verifiedYield * (userSharePercentage / 100);
+
+        const verificationEfficiency = totalYieldAvailable > 0 ? (verifiedYield / totalYieldAvailable) * 100 : 0;
+
+        // Asset performance analysis
+        const assetPerformance = activeDisclosures.reduce((acc, d) => {
+            if (!acc[d.assetId]) {
+                acc[d.assetId] = { totalYield: 0, verifiedYield: 0, count: 0 };
+            }
+            acc[d.assetId].totalYield += d.yieldAmount;
+            acc[d.assetId].count += 1;
+            if (d.status === 'verified') {
+                acc[d.assetId].verifiedYield += d.yieldAmount;
+            }
+            return acc;
+        }, {} as Record<string, { totalYield: number, verifiedYield: number, count: number }>);
+
+        const topPerformingAssets = Object.entries(assetPerformance)
+            .map(([assetId, data]) => ({
+                assetId,
+                totalYield: data.totalYield,
+                verifiedYield: data.verifiedYield,
+                successRate: data.totalYield > 0 ? (data.verifiedYield / data.totalYield) * 100 : 0,
+                count: data.count
+            }))
+            .sort((a, b) => b.totalYield - a.totalYield)
+            .slice(0, 5);
+
+        return {
+            totalYieldAvailable,
+            verifiedYield,
+            userSharePercentage,
+            userPotentialYield,
+            userVerifiedYield,
+            verificationEfficiency,
+            topPerformingAssets,
+            totalActiveAssets: Object.keys(assetPerformance).length
+        };
+    }, [activeDisclosures, userBalanceEth, totalDepositsEth]);
+
+    return (
+        <Card className="backdrop-blur-xl">
+            <CardHeader>
+                <div
+                    className="flex items-center justify-between cursor-pointer"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-primary/20 border border-primary/30 rounded-lg flex items-center justify-center">
+                            <BarChart3 className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <CardTitle>Verification Performance Analytics</CardTitle>
+                            <CardDescription>
+                                Your investment performance and asset analysis
+                            </CardDescription>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Badge variant="info" className="px-3 py-1">
+                            {performanceMetrics.userSharePercentage.toFixed(1)}% Vault Share
+                        </Badge>
+                        <ArrowRight className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                    </div>
+                </div>
+            </CardHeader>
+
+            {isExpanded && (
+                <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div className="text-center space-y-2 p-3 rounded-lg bg-card/50 border border-border/50">
+                            <div className="text-xl font-bold">{performanceMetrics.totalYieldAvailable.toFixed(2)}</div>
+                            <div className="text-xs">Total Yield Available (MNT)</div>
+                        </div>
+                        <div className="text-center space-y-2 p-3 rounded-lg bg-success/10 border border-success/30">
+                            <div className="text-xl font-bold text-success">{performanceMetrics.verifiedYield.toFixed(2)}</div>
+                            <div className="text-xs">Verified Yield (MNT)</div>
+                        </div>
+                        <div className="text-center space-y-2 p-3 rounded-lg bg-primary/10 border border-primary/30">
+                            <div className="text-xl font-bold text-primary">{performanceMetrics.userPotentialYield.toFixed(4)}</div>
+                            <div className="text-xs">Your Potential Share (MNT)</div>
+                        </div>
+                        <div className="text-center space-y-2 p-3 rounded-lg bg-accent/10 border border-accent/30">
+                            <div className="text-xl font-bold text-accent">{performanceMetrics.userVerifiedYield.toFixed(4)}</div>
+                            <div className="text-xs">Your Verified Share (MNT)</div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Verification Efficiency */}
+                        <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
+                            <div className="flex items-center gap-2 mb-3">
+                                <Activity className="w-4 h-4" />
+                                <span className="text-sm font-medium">Verification Efficiency</span>
+                            </div>
+                            <div className="text-3xl font-bold mb-2">
+                                {performanceMetrics.verificationEfficiency.toFixed(1)}%
+                            </div>
+                            <div className="text-xs mb-3">
+                                Of available yield successfully verified
+                            </div>
+                            <div className="w-full bg-muted rounded-full h-2">
+                                <div
+                                    className="bg-gradient-to-r from-success to-accent h-2 rounded-full transition-all duration-500"
+                                    style={{ width: `${performanceMetrics.verificationEfficiency}%` }}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Top Performing Assets */}
+                        <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
+                            <div className="flex items-center gap-2 mb-3">
+                                <Star className="w-4 h-4" />
+                                <span className="text-sm font-medium">Top Performing Assets</span>
+                            </div>
+                            <div className="space-y-2">
+                                {performanceMetrics.topPerformingAssets.length > 0 ? (
+                                    performanceMetrics.topPerformingAssets.map((asset, index) => (
+                                        <div key={asset.assetId} className="flex items-center justify-between text-xs">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 bg-primary rounded-full" />
+                                                <span className="font-medium">{asset.assetId}</span>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="font-bold">{asset.totalYield.toFixed(2)} MNT</div>
+                                                <div className="text-success">{asset.successRate.toFixed(0)}% verified</div>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-xs text-center py-4">No asset data available</div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-4 p-3 bg-primary/20 border border-primary/30 rounded-lg">
+                        <div className="flex items-start gap-2">
+                            <TrendingUp className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                            <div className="text-xs">
+                                <p className="font-medium">Your Investment Performance:</p>
+                                <p className="mt-1">
+                                    • <strong>Vault Share:</strong> {performanceMetrics.userSharePercentage.toFixed(2)}% of total deposits
+                                    • <strong>Potential Yield:</strong> {performanceMetrics.userPotentialYield.toFixed(4)} MNT available
+                                    • <strong>Verified Yield:</strong> {performanceMetrics.userVerifiedYield.toFixed(4)} MNT ready to claim
+                                    • <strong>Active Assets:</strong> {performanceMetrics.totalActiveAssets} different assets generating yield
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </CardContent>
+            )}
+        </Card>
     );
 }

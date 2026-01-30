@@ -11,7 +11,6 @@ import {
     ExternalLink,
     Loader2,
     Flag,
-    UserCheck,
     TrendingUp,
     Award,
     Eye,
@@ -19,7 +18,6 @@ import {
     CheckCircle2,
     AlertTriangle,
     FileText,
-    Coins,
     Activity,
     Target,
     Star,
@@ -30,9 +28,10 @@ import {
     RefreshCw,
     Plus
 } from 'lucide-react';
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useReadContracts } from 'wagmi';
+import { useAccount, useReadContract, useReadContracts } from 'wagmi';
 import { formatEther, parseEther, formatUnits, type Abi } from 'viem';
 import { CONTRACTS } from '@/app/config/contracts';
+import { useTransaction } from '@/hooks/useTransaction';
 
 // Enhanced data types
 interface Claim {
@@ -57,6 +56,7 @@ interface AttestorStats {
     trustScore: number;
     totalStaked: number;
     rewardsEarned: number;
+    totalRewardsClaimed: number;
     accuracyRate: number;
 }
 export default function AttestorPage() {
@@ -75,12 +75,22 @@ export default function AttestorPage() {
         trustScore: 0,
         totalStaked: 0,
         rewardsEarned: 0,
+        totalRewardsClaimed: 0,
         accuracyRate: 0
     });
 
-    // Contract Write Hook
-    const { writeContract, data: hash, isPending: isWritePending } = useWriteContract();
-    const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
+    // Transaction hooks
+    const { executeTransaction, isLoading: isTransactionLoading } = useTransaction({
+        onSuccess: () => {
+            refetchAttestor();
+            refetchClaims();
+            refetchHasAttested();
+            refetchTotalClaims();
+            refetchClaimStakes();
+            refetchAttestorLists();
+            setStakeAmount('1.0'); // Reset stake amount on success
+        }
+    });
 
     // Read attestor info
     const { data: attestorInfo, refetch: refetchAttestor } = useReadContract({
@@ -102,7 +112,7 @@ export default function AttestorPage() {
         functionName: 'MIN_REQUIRED_ATTESTORS',
     });
 
-    const minAttestors = minAttestorsData ? Number(minAttestorsData) : 3;
+    const minAttestors = minAttestorsData !== undefined ? Number(minAttestorsData) : null;
     // Read total claims
     const { data: totalClaimsData, refetch: refetchTotalClaims } = useReadContract({
         address: CONTRACTS.YieldProof.address as `0x${string}`,
@@ -157,6 +167,15 @@ export default function AttestorPage() {
         query: { refetchInterval: 5000 }
     });
 
+    // Read attestor stats from contract
+    const { data: attestorStatsData } = useReadContract({
+        address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
+        abi: CONTRACTS.AttestorRegistry.abi as Abi,
+        functionName: 'getAttestorStats',
+        args: [address],
+        query: { enabled: !!address, refetchInterval: 5000 }
+    });
+
     const isLoading = !isConnected || (totalClaims > 0 && (!claimsData || !hasAttestedData || !claimStakesData || !attestorListsData));
 
     // Process claims data
@@ -172,9 +191,19 @@ export default function AttestorPage() {
                 // Get attestor count from the attestor list
                 const attestorList = attestorListsData[i]?.result as string[] || [];
                 const attestorCount = attestorList.length;
+                const requiredAttestors = minAttestors ?? 3;
 
+                // Determine status based on attestor count and finalization
                 const statusEnum = Number(claim[6]);
-                const statusStr = ['submitted', 'attesting', 'verified', 'flagged', 'rejected'][statusEnum];
+                let statusStr: string;
+
+                if (statusEnum === 3) statusStr = 'flagged';
+                else if (statusEnum === 4) statusStr = 'rejected';
+                else if (attestorCount >= requiredAttestors) {
+                    // Check if finalized via recordVerification or finalizeAndReward
+                    statusStr = 'verified'; // Assume verified if enough attestors
+                } else if (attestorCount > 0) statusStr = 'attesting';
+                else statusStr = 'submitted';
 
                 return {
                     id: Number(claim[0]),
@@ -187,8 +216,8 @@ export default function AttestorPage() {
                     alreadyAttested: hasAttested,
                     currentBacking: stakeAmount,
                     attestorCount,
-                    requiredAttestors: minAttestors,
-                    submittedAt: new Date() // Would need to track this separately
+                    requiredAttestors: minAttestors ?? 3,
+                    submittedAt: claim[7] ? new Date(Number(claim[7]) * 1000) : new Date()
                 };
             }).filter(Boolean) as Claim[];
 
@@ -222,74 +251,75 @@ export default function AttestorPage() {
             setAttestedClaims(attested.reverse());
             setHistoryClaims(history.reverse());
 
-            // Calculate stats
-            const totalAttestations = attested.length + history.length;
-            const successfulAttestations = history.filter(c => c.status === 'verified').length + attested.filter(c => c.status === 'verified').length;
-            const accuracyRate = totalAttestations > 0 ? (successfulAttestations / totalAttestations) * 100 : 0;
+            // Use on-chain attestor stats if available
+            if (attestorStatsData) {
+                const statsArray = attestorStatsData as [bigint, bigint, bigint, bigint, bigint];
+                const totalAttestations = Number(statsArray[0]);
+                const successfulAttestations = Number(statsArray[1]);
+                const rewards = Number(formatEther(statsArray[2]));
+                const totalClaimed = Number(formatEther(statsArray[3]));
+                const trustScore = Number(statsArray[4]);
+                const accuracyRate = totalAttestations > 0 ? (successfulAttestations / totalAttestations) * 100 : 0;
 
-            setAttestorStats({
-                totalAttestations,
-                successfulAttestations,
-                trustScore: Math.min(100, totalAttestations * 8 + accuracyRate * 0.2),
-                totalStaked: parseFloat(currentStake),
-                rewardsEarned: successfulAttestations * 0.1, // Mock calculation
-                accuracyRate
-            });
-        }
-    }, [claimsData, hasAttestedData, claimStakesData, attestorListsData, address, currentStake, minAttestors]);
+                setAttestorStats({
+                    totalAttestations,
+                    successfulAttestations,
+                    trustScore,
+                    totalStaked: parseFloat(currentStake),
+                    rewardsEarned: rewards,
+                    totalRewardsClaimed: totalClaimed,
+                    accuracyRate
+                });
+            } else {
+                // Fallback to local calculation if contract call fails
+                const totalAttestations = attested.length + history.length;
+                const successfulAttestations = history.filter(c => c.status === 'verified').length + attested.filter(c => c.status === 'verified').length;
+                const accuracyRate = totalAttestations > 0 ? (successfulAttestations / totalAttestations) * 100 : 0;
 
-    // Refetch on transaction success
-    useEffect(() => {
-        if (isConfirmed) {
-            refetchAttestor();
-            refetchClaims();
-            refetchHasAttested();
-            refetchTotalClaims();
-            refetchClaimStakes();
-            refetchAttestorLists();
+                setAttestorStats({
+                    totalAttestations,
+                    successfulAttestations,
+                    trustScore: Math.min(100, totalAttestations * 8 + accuracyRate * 0.2),
+                    totalStaked: parseFloat(currentStake),
+                    rewardsEarned: 0,
+                    totalRewardsClaimed: 0,
+                    accuracyRate
+                });
+            }
         }
-    }, [isConfirmed, refetchAttestor, refetchClaims, refetchHasAttested, refetchTotalClaims, refetchClaimStakes, refetchAttestorLists]);
+    }, [claimsData, hasAttestedData, claimStakesData, attestorListsData, address, currentStake, minAttestors, attestorStatsData]);
+
+    // Refetch on transaction success - handled by useTransaction hook now
 
     // Handlers
     const handleStake = async () => {
         if (!isConnected || !stakeAmount) return;
 
-        try {
-            const value = parseEther(stakeAmount);
+        const value = parseEther(stakeAmount);
+        const functionName = !isRegistered ? 'register' : 'stakeETH';
 
-            if (!isRegistered) {
-                writeContract({
-                    address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
-                    abi: CONTRACTS.AttestorRegistry.abi as Abi,
-                    functionName: 'register',
-                    value
-                });
-            } else {
-                writeContract({
-                    address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
-                    abi: CONTRACTS.AttestorRegistry.abi as Abi,
-                    functionName: 'stakeETH',
-                    value
-                });
-            }
-        } catch (error) {
-            console.error("Staking failed:", error);
+        const transactionConfig: any = {
+            address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
+            abi: CONTRACTS.AttestorRegistry.abi as Abi,
+            functionName,
+        };
+
+        if (value > 0) {
+            transactionConfig.value = value;
         }
+
+        executeTransaction(transactionConfig);
     };
 
     const handleAttest = async (claimId: number) => {
         if (!isConnected) return;
 
-        try {
-            writeContract({
-                address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
-                abi: CONTRACTS.AttestorRegistry.abi as Abi,
-                functionName: 'attestToClaim',
-                args: [BigInt(claimId)]
-            });
-        } catch (error) {
-            console.error("Attestation failed:", error);
-        }
+        executeTransaction({
+            address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
+            abi: CONTRACTS.AttestorRegistry.abi as Abi,
+            functionName: 'attestToClaim',
+            args: [BigInt(claimId)]
+        });
     };
 
     const handleFlag = async (claimId: number) => {
@@ -298,16 +328,33 @@ export default function AttestorPage() {
         const reason = window.prompt("Why are you flagging this claim?");
         if (!reason) return;
 
-        try {
-            writeContract({
-                address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
-                abi: CONTRACTS.AttestorRegistry.abi as Abi,
-                functionName: 'flagClaim',
-                args: [BigInt(claimId), reason]
-            });
-        } catch (error) {
-            console.error("Flagging failed:", error);
-        }
+        executeTransaction({
+            address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
+            abi: CONTRACTS.AttestorRegistry.abi as Abi,
+            functionName: 'flagClaim',
+            args: [BigInt(claimId), reason]
+        });
+    };
+
+    const handleClaimRewards = async () => {
+        if (!isConnected) return;
+
+        executeTransaction({
+            address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
+            abi: CONTRACTS.AttestorRegistry.abi as Abi,
+            functionName: 'claimRewards',
+        });
+    };
+
+    const handleFinalizeClaim = async (claimId: number) => {
+        if (!isConnected) return;
+
+        executeTransaction({
+            address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
+            abi: CONTRACTS.AttestorRegistry.abi as Abi,
+            functionName: 'finalizeAndReward',
+            args: [BigInt(claimId)]
+        });
     };
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -357,7 +404,7 @@ export default function AttestorPage() {
         );
     }, [selectedTab, pendingClaims, attestedClaims, historyClaims, searchTerm]);
 
-    const isProcessing = isWritePending || isConfirming;
+    const isProcessing = isTransactionLoading;
 
     return (
         <div className="min-h-screen bg-background page-transition">
@@ -385,7 +432,7 @@ export default function AttestorPage() {
                         </div>
 
                         {/* Stats Grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 max-w-4xl mx-auto">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 pt-8 max-w-5xl mx-auto">
                             <div className="text-center space-y-2 p-4 rounded-3xl bg-card/70 border border-primary/20">
                                 <div className="text-2xl font-bold font-display">{attestorStats.totalStaked.toFixed(2)}</div>
                                 <div className="text-sm">MNT Staked</div>
@@ -400,7 +447,11 @@ export default function AttestorPage() {
                             </div>
                             <div className="text-center space-y-2 p-4 rounded-3xl bg-card/70 border border-primary/20">
                                 <div className="text-2xl font-bold font-display">{attestorStats.rewardsEarned.toFixed(2)}</div>
-                                <div className="text-sm">MNT Earned</div>
+                                <div className="text-sm">Pending MNT</div>
+                            </div>
+                            <div className="text-center space-y-2 p-4 rounded-3xl bg-card/70 border border-primary/20">
+                                <div className="text-2xl font-bold font-display">{attestorStats.totalRewardsClaimed.toFixed(2)}</div>
+                                <div className="text-sm">Total Claimed</div>
                             </div>
                         </div>
                     </div>
@@ -461,7 +512,7 @@ export default function AttestorPage() {
                                             onClick={handleStake}
                                             isLoading={isProcessing}
                                             disabled={!isConnected || !stakeAmount}
-                                            variant="primary"
+                                            variant="outline"
                                             className="w-full"
                                         >
                                             {!isProcessing ? (
@@ -471,6 +522,24 @@ export default function AttestorPage() {
                                                 </>
                                             ) : null}
                                         </Button>
+
+                                        {/* Claim Rewards Button */}
+                                        {isRegistered && attestorStats.rewardsEarned > 0 && (
+                                            <Button
+                                                onClick={handleClaimRewards}
+                                                isLoading={isProcessing}
+                                                disabled={!isConnected}
+                                                variant="primary"
+                                                className="w-full"
+                                            >
+                                                {!isProcessing ? (
+                                                    <>
+                                                        <DollarSign className="mr-2 h-4 w-4" />
+                                                        Claim {attestorStats.rewardsEarned.toFixed(2)} MNT
+                                                    </>
+                                                ) : null}
+                                            </Button>
+                                        )}
                                     </div>
                                     {!isRegistered && (
                                         <div className="space-y-3">
@@ -667,7 +736,7 @@ export default function AttestorPage() {
                                                                 <div className="text-center p-3 bg-muted/30 rounded-lg">
                                                                     <p className="text-xs">Attestors</p>
                                                                     <p className="font-mono">
-                                                                        {claim.attestorCount}/{claim.requiredAttestors}
+                                                                        {claim.attestorCount || 0}/{claim.requiredAttestors || 3}
                                                                     </p>
                                                                 </div>
                                                                 <div className="text-center p-3 bg-muted/30 rounded-lg">
@@ -687,7 +756,7 @@ export default function AttestorPage() {
                                                             <div className="space-y-2">
                                                                 <div className="flex justify-between text-xs">
                                                                     <span>Attestation Progress</span>
-                                                                    <span>{claim.attestorCount} / {claim.requiredAttestors} required</span>
+                                                                    <span>{claim.attestorCount || 0} / {claim.requiredAttestors || 3} required</span>
                                                                 </div>
                                                                 <div className="w-full bg-muted rounded-full h-2">
                                                                     <div
@@ -725,20 +794,41 @@ export default function AttestorPage() {
                                                         {/* Actions */}
                                                         {selectedTab === 'pending' && (
                                                             <div className="flex flex-col gap-3 ml-6">
-                                                                <Button
-                                                                    onClick={() => handleAttest(claim.id)}
-                                                                    isLoading={isProcessing}
-                                                                    disabled={!isConnected || parseFloat(currentStake) <= 0}
-                                                                    variant="primary"
-                                                                    className="px-6"
-                                                                >
-                                                                    {!isProcessing ? (
-                                                                        <>
-                                                                            <ShieldCheck className="w-4 h-4 mr-2" />
-                                                                            Attest
-                                                                        </>
-                                                                    ) : null}
-                                                                </Button>
+                                                                {/* Show finalize button if claim has enough attestors */}
+                                                                {(claim.attestorCount || 0) >= (claim.requiredAttestors || 3) && (
+                                                                    <Button
+                                                                        onClick={() => handleFinalizeClaim(claim.id)}
+                                                                        isLoading={isProcessing}
+                                                                        disabled={!isConnected}
+                                                                        variant="success"
+                                                                        className="px-6"
+                                                                    >
+                                                                        {!isProcessing ? (
+                                                                            <>
+                                                                                <CheckCircle2 className="w-4 h-4 mr-2" />
+                                                                                Finalize & Reward
+                                                                            </>
+                                                                        ) : null}
+                                                                    </Button>
+                                                                )}
+
+                                                                {/* Regular attest button */}
+                                                                {(claim.attestorCount || 0) < (claim.requiredAttestors || 3) && (
+                                                                    <Button
+                                                                        onClick={() => handleAttest(claim.id)}
+                                                                        isLoading={isProcessing}
+                                                                        disabled={!isConnected || parseFloat(currentStake) <= 0}
+                                                                        variant="primary"
+                                                                        className="px-6"
+                                                                    >
+                                                                        {!isProcessing ? (
+                                                                            <>
+                                                                                <ShieldCheck className="w-4 h-4 mr-2" />
+                                                                                Attest
+                                                                            </>
+                                                                        ) : null}
+                                                                    </Button>
+                                                                )}
 
                                                                 <Button
                                                                     variant="outline"
@@ -773,12 +863,12 @@ export default function AttestorPage() {
                                                                         </div>
                                                                         <div className="flex justify-between items-center">
                                                                             <span>Attestors Reached:</span>
-                                                                            <span className="font-mono font-semibold">{claim.attestorCount}</span>
+                                                                            <span className="font-mono font-semibold">{claim.attestorCount || 0}</span>
                                                                         </div>
                                                                         <div className="flex justify-between items-center pt-2 border-t border-border">
                                                                             <span>Criteria Fulfilled:</span>
                                                                             <span className="font-mono font-bold">
-                                                                                {claim.attestorCount}/{claim.requiredAttestors} ✓
+                                                                                {claim.attestorCount || 0}/{claim.requiredAttestors || 3} ✓
                                                                             </span>
                                                                         </div>
                                                                         <div className="flex justify-between items-center">

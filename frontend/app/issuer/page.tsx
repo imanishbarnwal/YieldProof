@@ -7,9 +7,13 @@ import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { AnimatedSection, StaggeredContainer } from '@/components/ui/AnimatedSection';
 import { Select } from '@/components/ui/Select';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, useReadContracts } from 'wagmi';
+import { CustomSelect } from '@/components/ui/CustomSelect';
+import { DatePicker } from '@/components/ui/DatePicker';
+import { useAccount, useReadContract, useReadContracts } from 'wagmi';
 import { formatEther, parseEther, type Abi } from 'viem';
+import { format, isAfter, isBefore, isValid } from 'date-fns';
 import { CONTRACTS } from '@/app/config/contracts';
+import { useTransaction } from '@/hooks/useTransaction';
 import {
     Upload,
     FileText,
@@ -79,8 +83,8 @@ export default function IssuerPage() {
     const [escrowFundings, setEscrowFundings] = useState<EscrowFunding[]>([]);
     const [formData, setFormData] = useState({
         assetId: '',
-        startDate: '',
-        endDate: '',
+        startDate: '' as string,
+        endDate: '' as string,
         yieldAmount: '',
         documentHash: ''
     });
@@ -103,9 +107,28 @@ export default function IssuerPage() {
         return new Date();
     };
 
-    // Contract Write Hook
-    const { writeContract, data: hash, isPending: isWritePending } = useWriteContract();
-    const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
+    // Transaction hooks
+    const { executeTransaction, isLoading: isTransactionLoading } = useTransaction({
+        onSuccess: () => {
+            refetchTotalClaims();
+            refetchClaims();
+            refetchAttestorLists();
+            refetchClaimStakes();
+            refetchTotalDeposits();
+            refetchPendingDistributions();
+            // Reset forms on success
+            setFormData({
+                assetId: '',
+                startDate: '',
+                endDate: '',
+                yieldAmount: '',
+                documentHash: ''
+            });
+            setUploadedCid(null);
+            setDateValidationError(null);
+            setEscrowData(prev => ({ ...prev, amount: '' }));
+        }
+    });
 
     // Read total claims count from YieldProof
     const { data: totalClaimsData, refetch: refetchTotalClaims } = useReadContract({
@@ -150,6 +173,37 @@ export default function IssuerPage() {
         query: { enabled: claimIndexes.length > 0, refetchInterval: 5000 }
     });
 
+    // Read total deposits from YieldVault for escrow balance
+    const { data: totalDepositsData, refetch: refetchTotalDeposits } = useReadContract({
+        address: CONTRACTS.YieldVault.address as `0x${string}`,
+        abi: CONTRACTS.YieldVault.abi as Abi,
+        functionName: 'totalDeposits',
+        query: { refetchInterval: 5000 }
+    });
+
+    // Read pending distributions from YieldVault
+    const { data: pendingDistributionsData, refetch: refetchPendingDistributions } = useReadContract({
+        address: CONTRACTS.YieldVault.address as `0x${string}`,
+        abi: CONTRACTS.YieldVault.abi as Abi,
+        functionName: 'getPendingDistributions',
+        query: { refetchInterval: 5000 }
+    });
+
+    // Read attestation fee from AttestorRegistry
+    const { data: attestationFeeData } = useReadContract({
+        address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
+        abi: CONTRACTS.AttestorRegistry.abi as Abi,
+        functionName: 'getAttestationFee',
+    });
+
+    // Read reward pool balance from AttestorRegistry
+    const { data: rewardPoolBalanceData } = useReadContract({
+        address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
+        abi: CONTRACTS.AttestorRegistry.abi as Abi,
+        functionName: 'getRewardPoolBalance',
+        query: { refetchInterval: 5000 }
+    });
+
     // Process claims data into disclosures (filter by user's address)
     useEffect(() => {
         if (claimsData && attestorListsData && claimStakesData && address) {
@@ -177,24 +231,25 @@ export default function IssuerPage() {
                         return null;
                     }
 
-                    let status = 'submitted';
-                    if (claim[6] === 1) status = 'attesting';
-                    else if (claim[6] === 2) status = 'verified';
-                    else if (claim[6] === 3) status = 'flagged';
-
                     // Convert yield amount from wei to readable format
                     const yieldAmountWei = claim[3] ? BigInt(claim[3]) : BigInt(0);
                     const yieldAmountEther = parseFloat(formatEther(yieldAmountWei));
 
-                    console.log('Yield amount conversion:', {
-                        raw: claim[3],
-                        wei: yieldAmountWei.toString(),
-                        ether: yieldAmountEther
-                    });
-
                     // Get real attestor count and stake data
                     const attestorList = attestorListsData[index]?.result as string[] || [];
                     const attestorCount = attestorList.length;
+                    const requiredAttestors = 3;
+
+                    // Determine status based on attestor count and verification state
+                    let status = 'submitted';
+                    if (claim[6] === 3) status = 'flagged'; // Flagged status (ClaimStatus.Challenged = 3)
+                    else if (attestorCount >= requiredAttestors) {
+                        // Has enough attestors - can be verified
+                        status = 'verified';
+                    } else if (attestorCount > 0) {
+                        // Has some attestors but not enough yet
+                        status = 'attesting';
+                    }
                     const stakeAmount = claimStakesData[index]?.result ? formatEther(claimStakesData[index].result as bigint) : '0';
 
                     const disclosure = {
@@ -208,8 +263,8 @@ export default function IssuerPage() {
                         currentStake: parseFloat(stakeAmount).toFixed(1),
                         attestorCount: attestorCount,
                         minAttestors: 3,
-                        proofHash: `0x${claim[4]?.slice(2, 42) || 'generated_hash_placeholder'}`,
-                        submittedAt: getCurrentDate() // Would need to track this separately
+                        proofHash: claim[4] ? `${claim[4].slice(0, 16)}...` : 'N/A',
+                        submittedAt: claim[7] ? new Date(Number(claim[7]) * 1000) : getCurrentDate()
                     };
 
                     console.log('Processed disclosure:', disclosure);
@@ -225,15 +280,7 @@ export default function IssuerPage() {
         }
     }, [claimsData, attestorListsData, claimStakesData, address, selectedVault]);
 
-    // Refetch data when transaction is confirmed
-    useEffect(() => {
-        if (isConfirmed) {
-            refetchTotalClaims();
-            refetchClaims();
-            refetchAttestorLists();
-            refetchClaimStakes();
-        }
-    }, [isConfirmed, refetchTotalClaims, refetchClaims, refetchAttestorLists, refetchClaimStakes]);
+    // Refetch data when transaction is confirmed - handled by useTransaction hook now
 
     // Calculate dynamic metrics based on actual disclosures
     const vaultMetrics: VaultMetrics = {
@@ -245,29 +292,31 @@ export default function IssuerPage() {
             disclosures.length < 3 ? 'BUILDING' :
                 disclosures.filter(d => d.status === 'verified').length / disclosures.length > 0.8 ? 'EXCELLENT' : 'GOOD',
         totalStaked: disclosures.reduce((sum, d) => sum + parseFloat(d.currentStake || '0'), 0).toFixed(1),
-        avgVerificationTime: '2.4 days',
+        avgVerificationTime: 'N/A', // Requires additional on-chain tracking
         reputationScore: Math.min(100, disclosures.length * 15 + disclosures.filter(d => d.status === 'verified').length * 10)
     };
 
-    // Calculate total escrow balance
-    const totalEscrowBalance = escrowFundings
-        .filter(f => f.status === 'confirmed')
-        .reduce((sum, f) => sum + f.amount, 0);
+    // Read total escrow balance from contract
+    const totalEscrowBalance = totalDepositsData ? Number(formatEther(totalDepositsData as bigint)) : 0;
 
-    // Calculate pending distributions (verified disclosures that haven't been distributed)
-    const pendingDistributions = disclosures
-        .filter(d => d.status === 'verified')
-        .reduce((sum, d) => sum + d.yieldAmount, 0);
+    // Read pending distributions from contract
+    const pendingDistributions = pendingDistributionsData ? Number(formatEther(pendingDistributionsData as bigint)) : 0;
+
+    // Calculate attestation fee and reward pool balance
+    const attestationFee = attestationFeeData ? Number(formatEther(attestationFeeData as bigint)) : 0.9;
+    const rewardPoolBalance = rewardPoolBalanceData ? Number(formatEther(rewardPoolBalanceData as bigint)) : 0;
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
 
-        // Real-time date validation
-        if (name === 'startDate' || name === 'endDate') {
-            const newFormData = { ...formData, [name]: value };
-            validateDates(newFormData.startDate, newFormData.endDate);
-        }
+    const handleDateChange = (name: 'startDate' | 'endDate', date: string) => {
+        setFormData(prev => ({ ...prev, [name]: date }));
+
+        // Real-time date validation with string dates
+        const newFormData = { ...formData, [name]: date };
+        validateDates(newFormData.startDate, newFormData.endDate);
     };
 
     const validateDates = (startDateStr: string, endDateStr: string) => {
@@ -277,21 +326,26 @@ export default function IssuerPage() {
             return; // Don't validate until both dates are selected
         }
 
-        const start = new Date(startDateStr);
-        const end = new Date(endDateStr);
-        const now = getCurrentDate();
+        const startDate = new Date(startDateStr);
+        const endDate = new Date(endDateStr);
 
-        // Set all dates to midnight for proper comparison (ignore time)
-        const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-        const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
-        const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-        if (endDate > todayDate) {
-            setDateValidationError(`End date cannot be in the future. Please select a date up to today (${todayDate.toLocaleDateString()}).`);
+        if (!isValid(startDate) || !isValid(endDate)) {
+            setDateValidationError("Please select valid dates.");
             return;
         }
 
-        if (startDate >= endDate) {
+        const now = new Date();
+        // Set all dates to midnight for proper comparison (ignore time)
+        const startDateMidnight = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+        const endDateMidnight = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+        const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        if (isAfter(endDateMidnight, todayMidnight)) {
+            setDateValidationError(`End date cannot be in the future. Please select a date up to today (${todayMidnight.toLocaleDateString()}).`);
+            return;
+        }
+
+        if (!isBefore(startDateMidnight, endDateMidnight)) {
             setDateValidationError("Start date must be before the end date.");
             return;
         }
@@ -348,142 +402,75 @@ export default function IssuerPage() {
         }
     };
 
-    const formatPeriod = (startDate: string, endDate: string): string => {
-        const start = new Date(startDate);
-        const end = new Date(endDate);
+    const formatPeriod = (startDateStr: string, endDateStr: string): string => {
+        if (!startDateStr || !endDateStr) return '';
+
+        const startDate = new Date(startDateStr);
+        const endDate = new Date(endDateStr);
 
         const fullOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' };
         const monthYearOptions: Intl.DateTimeFormatOptions = { month: 'short', year: 'numeric' };
 
-        if (start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()) {
-            return start.toLocaleDateString('en-US', monthYearOptions);
+        if (startDate.getMonth() === endDate.getMonth() && startDate.getFullYear() === endDate.getFullYear()) {
+            return startDate.toLocaleDateString('en-US', monthYearOptions);
         } else {
-            return `${start.toLocaleDateString('en-US', fullOptions)} – ${end.toLocaleDateString('en-US', fullOptions)}`;
+            return `${startDate.toLocaleDateString('en-US', fullOptions)} – ${endDate.toLocaleDateString('en-US', fullOptions)}`;
         }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!isConnected) {
-            alert('Please connect your wallet first.');
-            return;
-        }
+        if (!isConnected) return;
 
         // Validation
-        if (!formData.startDate || !formData.endDate) {
-            alert("Please select both start and end dates.");
-            return;
-        }
-
-        // Check if there are any date validation errors
-        if (dateValidationError) {
-            alert(dateValidationError);
-            return;
-        }
-
-        const start = new Date(formData.startDate);
-        const end = new Date(formData.endDate);
-        const now = getCurrentDate();
-
-        // Set all dates to midnight for proper comparison (ignore time)
-        const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-        const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
-        const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-        // Debug logging to help troubleshoot
-        console.log('Date validation:', {
-            startInput: formData.startDate,
-            endInput: formData.endDate,
-            startDate: startDate.toISOString().split('T')[0],
-            endDate: endDate.toISOString().split('T')[0],
-            todayDate: todayDate.toISOString().split('T')[0],
-            endDateAfterToday: endDate > todayDate,
-            startAfterEnd: startDate >= endDate
-        });
+        if (!formData.startDate || !formData.endDate) return;
+        if (dateValidationError) return;
 
         // Double-check validation (should be caught by real-time validation)
-        if (endDate > todayDate) {
-            alert(`End date cannot be in the future. Please select a date up to today (${todayDate.toLocaleDateString()}).`);
-            return;
-        }
+        const now = new Date();
+        const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const endDate = new Date(formData.endDate);
+        const startDate = new Date(formData.startDate);
+        const endDateMidnight = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+        const startDateMidnight = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
 
-        if (startDate >= endDate) {
-            alert("Start date must be before the end date. Please check your date selection.");
-            return;
-        }
-
-        if (!formData.assetId || !formData.yieldAmount || !formData.documentHash) {
-            alert("Please fill in all required fields including asset ID, yield amount, and upload a document.");
-            return;
-        }
+        if (endDateMidnight > todayMidnight || !isBefore(startDateMidnight, endDateMidnight)) return;
+        if (!formData.assetId || !formData.yieldAmount || !formData.documentHash) return;
 
         const yieldAmount = parseFloat(formData.yieldAmount);
-        if (isNaN(yieldAmount) || yieldAmount <= 0) {
-            alert("Please enter a valid yield amount greater than 0.");
-            return;
-        }
+        if (isNaN(yieldAmount) || yieldAmount <= 0) return;
 
-        try {
-            const period = formatPeriod(formData.startDate, formData.endDate);
+        const period = formatPeriod(formData.startDate, formData.endDate);
 
-            writeContract({
-                address: CONTRACTS.YieldProof.address as `0x${string}`,
-                abi: CONTRACTS.YieldProof.abi as Abi,
-                functionName: 'submitClaim',
-                args: [
-                    formData.assetId,
-                    period,
-                    BigInt(Math.floor(parseFloat(formData.yieldAmount) * 1e18)), // Convert to wei
-                    formData.documentHash
-                ]
-            });
-
-            // Reset form
-            setFormData({
-                assetId: '',
-                startDate: '',
-                endDate: '',
-                yieldAmount: '',
-                documentHash: ''
-            });
-            setUploadedCid(null);
-            setDateValidationError(null);
-
-        } catch (error) {
-            console.error("Submission failed", error);
-            alert("Submission failed. Please try again.");
-        }
+        // Submit claim with attestation fee included in single transaction
+        executeTransaction({
+            address: CONTRACTS.YieldProof.address as `0x${string}`,
+            abi: CONTRACTS.YieldProof.abi as Abi,
+            functionName: 'submitClaim',
+            args: [
+                formData.assetId,
+                period,
+                BigInt(Math.floor(parseFloat(formData.yieldAmount) * 1e18)), // Convert to wei
+                formData.documentHash
+            ],
+            value: parseEther(attestationFee.toString()) // Include attestation fee in the transaction
+        });
     };
 
     const handleEscrowFunding = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!isConnected) {
-            alert('Please connect your wallet first.');
-            return;
-        }
+        if (!isConnected || !escrowData.amount || parseFloat(escrowData.amount) <= 0) return;
 
-        if (!escrowData.amount || parseFloat(escrowData.amount) <= 0) {
-            alert("Please enter a valid amount.");
-            return;
-        }
+        const transactionConfig: any = {
+            address: CONTRACTS.YieldVault.address as `0x${string}`,
+            abi: CONTRACTS.YieldVault.abi as Abi,
+            functionName: 'deposit',
+            value: parseEther(escrowData.amount)
+        };
 
-        try {
-            writeContract({
-                address: CONTRACTS.YieldVault.address as `0x${string}`,
-                abi: CONTRACTS.YieldVault.abi as Abi,
-                functionName: 'deposit',
-                value: parseEther(escrowData.amount)
-            });
-
-            // Reset form
-            setEscrowData(prev => ({ ...prev, amount: '' }));
-
-        } catch (error) {
-            console.error("Escrow funding failed", error);
-            alert("Escrow funding failed. Please try again.");
-        }
+        executeTransaction(transactionConfig);
     };
 
     const getStatusColor = (status: string) => {
@@ -571,14 +558,15 @@ export default function IssuerPage() {
                             </CardHeader>
                             <CardContent>
                                 <form onSubmit={handleSubmit} className="space-y-6">
-                                    <Select
+                                    <CustomSelect
                                         label="Select Vault"
                                         value={selectedVault}
-                                        onChange={(e) => setSelectedVault(e.target.value)}
+                                        onChange={(value) => setSelectedVault(value)}
                                         helperText="Choose the vault for this yield disclosure"
-                                    >
-                                        <option>YieldProof Demo Vault</option>
-                                    </Select>
+                                        options={[
+                                            { value: 'YieldProof Demo Vault', label: 'YieldProof Demo Vault' }
+                                        ]}
+                                    />
 
                                     <Input
                                         label="Asset Sub-ID / Label"
@@ -590,23 +578,19 @@ export default function IssuerPage() {
                                     />
 
                                     <div className="grid grid-cols-2 gap-4">
-                                        <Input
+                                        <DatePicker
                                             label="Start Date"
-                                            type="date"
-                                            name="startDate"
                                             value={formData.startDate}
-                                            onChange={handleInputChange}
-                                            max={formData.endDate || currentDate}
+                                            onChange={(date) => handleDateChange('startDate', date)}
+                                            maxDate={formData.endDate || new Date().toISOString().split('T')[0]}
                                             helperText="Beginning of yield period"
                                         />
-                                        <Input
+                                        <DatePicker
                                             label="End Date"
-                                            type="date"
-                                            name="endDate"
                                             value={formData.endDate}
-                                            onChange={handleInputChange}
-                                            min={formData.startDate}
-                                            max={currentDate}
+                                            onChange={(date) => handleDateChange('endDate', date)}
+                                            minDate={formData.startDate}
+                                            maxDate={new Date().toISOString().split('T')[0]}
                                             helperText="Must be today or earlier"
                                         />
                                     </div>
@@ -694,23 +678,22 @@ export default function IssuerPage() {
                                         type="submit"
                                         variant="primary"
                                         className="w-full"
-                                        isLoading={isWritePending || isConfirming || isUploading}
+                                        isLoading={isTransactionLoading || isUploading}
                                         disabled={!isConnected || !!dateValidationError}
                                     >
-                                        {!isWritePending && !isConfirming ? (
+                                        {!isTransactionLoading ? (
                                             <>
                                                 <PlusCircle className="mr-2 h-4 w-4" />
-                                                Submit Disclosure
+                                                Submit Disclosure + Pay Fee ({attestationFee.toFixed(1)} MNT)
                                             </>
                                         ) : null}
                                     </Button>
 
-                                    <div className="flex items-start gap-2 mt-4 p-3 bg-card/50 rounded-2xl border border-primary/20">
+                                    <div className="flex items-start gap-2 mt-4 p-3 bg-info/20 border border-info/30 rounded-lg">
                                         <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
                                         <div className="text-xs">
-                                            <span className="font-semibold">MVP:</span> Proofs are public.
-                                            <br />
-                                            <span>Encrypted proofs & ZK verification coming in V2.</span>
+                                            <p className="font-semibold">Single Transaction:</p>
+                                            <p className="mt-1">Submits your disclosure and pays the {attestationFee.toFixed(1)} MNT attestation fee in one transaction. This fee funds rewards for the 3 attestors who will verify your claim.</p>
                                         </div>
                                     </div>
                                 </form>
@@ -839,10 +822,49 @@ export default function IssuerPage() {
                     </AnimatedSection>
                 </div>
 
-                {/* Enforce Distribution Section */}
+                {/* Attestation Fee & Enforce Distribution Section */}
                 <AnimatedSection delay={0.6} className="mt-12">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {/* Left Column - Enforce Distribution Form */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* Left Column - Attestation Fee Information */}
+                        <Card className="backdrop-blur-xl">
+                            <CardHeader>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-accent/20 border border-accent/30 rounded-lg flex items-center justify-center">
+                                        <Coins className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <CardTitle>Attestor Reward Pool</CardTitle>
+                                        <CardDescription>
+                                            Fees from claim submissions fund attestor rewards.
+                                        </CardDescription>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
+                                    <div className="text-sm mb-1">Attestation Fee per Claim</div>
+                                    <div className="text-lg font-semibold">
+                                        {attestationFee.toFixed(1)} MNT
+                                    </div>
+                                    <div className="text-xs mt-1">Automatically paid when submitting claims</div>
+                                </div>
+
+                                <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
+                                    <div className="text-sm mb-1">Current Reward Pool</div>
+                                    <div className="text-lg font-semibold">
+                                        {rewardPoolBalance.toFixed(2)} MNT
+                                    </div>
+                                    <div className="text-xs mt-1">Available for attestor rewards</div>
+                                </div>
+
+                                <div className="text-xs p-3 bg-info/20 border border-info/30 rounded-lg">
+                                    <p className="font-medium">How it works:</p>
+                                    <p className="mt-1">Each claim submission includes a {attestationFee.toFixed(1)} MNT fee that funds rewards for the 3 attestors who verify your claim (0.3 MNT each).</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Middle Column - Enforce Distribution Form */}
                         <Card className="backdrop-blur-xl">
                             <CardHeader>
                                 <div className="flex items-center gap-3">
@@ -864,7 +886,7 @@ export default function IssuerPage() {
                                         <select
                                             value={escrowData.vaultName}
                                             onChange={(e) => setEscrowData(prev => ({ ...prev, vaultName: e.target.value }))}
-                                            className="form-input w-full appearance-none cursor-pointer"
+                                            className="form-input w-full appearance-none cursor-pointer custom-select"
                                         >
                                             <option>YieldProof Demo Vault (0 Pool)</option>
                                         </select>
@@ -882,12 +904,12 @@ export default function IssuerPage() {
 
                                     <Button
                                         type="submit"
-                                        variant="secondary"
+                                        variant="primary"
                                         className="w-full"
-                                        isLoading={isWritePending || isConfirming}
+                                        isLoading={isTransactionLoading}
                                         disabled={!isConnected}
                                     >
-                                        {!isWritePending && !isConfirming ? (
+                                        {!isTransactionLoading ? (
                                             <>
                                                 <Scale className="mr-2 h-4 w-4" />
                                                 Enforce Escrow Funding

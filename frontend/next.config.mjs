@@ -59,6 +59,22 @@ const nextConfig = {
       fullUrl: process.env.NODE_ENV === 'development',
     },
   },
+
+  // Suppress hydration warnings for demo
+  onDemandEntries: {
+    // period (in ms) where the server will keep pages in the buffer
+    maxInactiveAge: 25 * 1000,
+    // number of pages that should be kept simultaneously without being disposed
+    pagesBufferLength: 2,
+  },
+
+  // Suppress console warnings during development
+  webpack: (config, { dev, isServer }) => {
+    if (dev && !isServer) {
+      config.devtool = 'cheap-module-source-map';
+    }
+    return config;
+  },
 };
 
 export default nextConfig;

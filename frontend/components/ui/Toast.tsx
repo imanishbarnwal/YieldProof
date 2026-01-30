@@ -19,7 +19,7 @@ export function Toast({
     title,
     description,
     type = 'info',
-    duration = 5000,
+    duration = 4000,
     onClose
 }: ToastProps) {
     React.useEffect(() => {
@@ -39,37 +39,50 @@ export function Toast({
     }
 
     const styles = {
-        success: "border-accent/50 bg-accent/10 text-accent-foreground",
-        error: "border-destructive/50 bg-destructive/10 text-destructive-foreground",
-        warning: "border-accent/50 bg-accent/10 text-accent-foreground",
-        info: "border-secondary/50 bg-secondary/10 text-secondary-foreground"
+        success: {
+            container: "border-emerald-500/30 bg-card/95",
+            icon: "text-emerald-500"
+        },
+        error: {
+            container: "border-destructive/30 bg-card/95",
+            icon: "text-destructive"
+        },
+        warning: {
+            container: "border-amber-500/30 bg-card/95",
+            icon: "text-amber-500"
+        },
+        info: {
+            container: "border-primary/30 bg-card/95",
+            icon: "text-primary"
+        }
     }
 
     const Icon = icons[type]
+    const style = styles[type]
 
     return (
         <motion.div
-            initial={{ opacity: 0, x: 300, scale: 0.3 }}
+            initial={{ opacity: 0, x: 100, scale: 0.9 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: 300, scale: 0.5 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
+            exit={{ opacity: 0, x: 100, scale: 0.9 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             className={cn(
-                "relative flex w-full max-w-sm items-start gap-3 rounded-lg border p-4 shadow-lg backdrop-blur-sm",
-                styles[type]
+                "relative flex w-full max-w-sm items-start gap-3 rounded-2xl border p-4 backdrop-blur-xl shadow-lg",
+                style.container
             )}
         >
-            <Icon className="h-5 w-5 mt-0.5 flex-shrink-0" />
+            <Icon className={cn("h-5 w-5 mt-0.5 flex-shrink-0", style.icon)} />
             <div className="flex-1 space-y-1">
                 {title && (
-                    <div className="text-sm font-medium">{title}</div>
+                    <div className="text-sm font-medium text-foreground">{title}</div>
                 )}
                 {description && (
-                    <div className="text-sm opacity-80">{description}</div>
+                    <div className="text-sm text-muted-foreground">{description}</div>
                 )}
             </div>
             <button
                 onClick={() => onClose?.(id)}
-                className="flex-shrink-0 opacity-60 hover:opacity-100 transition-opacity"
+                className="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors"
             >
                 <X className="h-4 w-4" />
             </button>
@@ -100,7 +113,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     return (
         <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
             {children}
-            <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
+            <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
                 <AnimatePresence>
                     {toasts.map(toast => (
                         <Toast key={toast.id} {...toast} onClose={removeToast} />

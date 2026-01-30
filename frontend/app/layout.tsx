@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Providers from "@/app/providers";
 import { ContractGuardrail } from "@/components/ContractGuardrail";
 import { ToastProvider } from "@/components/ui/Toast";
+import { LayoutClient } from "@/components/LayoutClient";
 
 const syne = Syne({
     subsets: ["latin"],
@@ -45,16 +46,37 @@ export default function RootLayout({
 }) {
     return (
         <html lang="en" className={`dark ${syne.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}>
+            <head>
+                <script
+                    dangerouslySetInnerHTML={{
+                        __html: `
+                            // Suppress hydration warnings for demo
+                            if (typeof window !== 'undefined') {
+                                const originalError = console.error;
+                                console.error = (...args) => {
+                                    if (typeof args[0] === 'string' && args[0].includes('hydration')) {
+                                        return;
+                                    }
+                                    if (typeof args[0] === 'string' && args[0].includes('server rendered HTML')) {
+                                        return;
+                                    }
+                                    originalError.apply(console, args);
+                                };
+                            }
+                        `,
+                    }}
+                />
+            </head>
             <body className={`${dmSans.className} antialiased bg-background text-foreground`}>
                 <Providers>
                     <ToastProvider>
-                        <ContractGuardrail />
-                        <div className="relative flex min-h-screen flex-col">
+                        <LayoutClient>
+                            <ContractGuardrail />
                             <Navbar />
                             <main className="flex-1">
                                 {children}
                             </main>
-                        </div>
+                        </LayoutClient>
                     </ToastProvider>
                 </Providers>
             </body>
