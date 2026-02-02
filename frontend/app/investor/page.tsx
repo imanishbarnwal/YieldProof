@@ -1122,7 +1122,7 @@ function VerificationPerformanceCard({
             return acc;
         }, {} as Record<string, { totalYield: number, verifiedYield: number, count: number }>);
 
-        const topPerformingAssets = Object.entries(assetPerformance)
+        const topPerformingAssets = (Object.entries(assetPerformance) as [string, { totalYield: number, verifiedYield: number, count: number }][])
             .map(([assetId, data]) => ({
                 assetId,
                 totalYield: data.totalYield,

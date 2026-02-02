@@ -444,7 +444,7 @@ export default function IssuerPage() {
         const period = formatPeriod(formData.startDate, formData.endDate);
 
         // Submit claim with attestation fee included in single transaction
-        executeTransaction({
+        const transactionConfig: any = {
             address: CONTRACTS.YieldProof.address as `0x${string}`,
             abi: CONTRACTS.YieldProof.abi as Abi,
             functionName: 'submitClaim',
@@ -453,9 +453,14 @@ export default function IssuerPage() {
                 period,
                 BigInt(Math.floor(parseFloat(formData.yieldAmount) * 1e18)), // Convert to wei
                 formData.documentHash
-            ],
-            value: parseEther(attestationFee.toString()) // Include attestation fee in the transaction
-        });
+            ]
+        };
+
+        if (attestationFeeData) {
+            transactionConfig.value = attestationFeeData as bigint;
+        }
+
+        executeTransaction(transactionConfig);
     };
 
     const handleEscrowFunding = async (e: React.FormEvent) => {
