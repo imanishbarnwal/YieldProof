@@ -40,7 +40,7 @@ YieldProof introduces **cryptographic proof-based yield disclosure**:
 
 ---
 
-## 🔄 Protocol Flow
+##  Protocol Flow
 
 ```mermaid
 flowchart TB
@@ -64,6 +64,13 @@ flowchart TB
 
 ---
 
+## High Level Attestation Flow
+
+<img width="1600" height="1384" alt="image" src="https://github.com/user-attachments/assets/010a7ec8-1202-4259-abb3-c52b94ffc200" />
+
+
+
+---
 ## � Live Application
 
 **🌐 Live on Mantle Sepolia**: [https://yield-proof.vercel.app](https://yield-proof.vercel.app)
