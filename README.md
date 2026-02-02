@@ -66,7 +66,8 @@ flowchart TB
 
 ## High Level Attestation Flow
 
-<img width="1600" height="1384" alt="image" src="https://github.com/user-attachments/assets/010a7ec8-1202-4259-abb3-c52b94ffc200" />
+<img width="1600" height="1449" alt="image" src="https://github.com/user-attachments/assets/d9b9a986-4613-4e23-9018-51fe498e60cf" />
+
 
 
 
