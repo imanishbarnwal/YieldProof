@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, ShieldCheck, PieChart, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, ShieldCheck, PieChart, Sun, Moon, Globe } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
@@ -23,6 +23,7 @@ export default function Navbar() {
         { name: 'Issuer', href: '/issuer', icon: LayoutDashboard },
         { name: 'Attestor', href: '/attestor', icon: ShieldCheck },
         { name: 'Investor', href: '/investor', icon: PieChart },
+        { name: 'ENS Profiles', href: '/ens', icon: Globe },
     ];
 
     const toggleTheme = () => {

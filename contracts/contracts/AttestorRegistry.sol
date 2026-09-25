@@ -2,8 +2,12 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./interfaces/IWorldID.sol";
+import "./helpers/ByteHasher.sol";
 
 contract AttestorRegistry is Ownable {
+    using ByteHasher for bytes;
+
     struct Attestor {
         bool isRegistered;
         uint256 stake;
@@ -22,6 +26,30 @@ contract AttestorRegistry is Ownable {
     mapping(uint256 => string) public flagReasons;
     // claimId => is flagged
     mapping(uint256 => bool) public isFlagged;
+
+    // ============================
+    // World ID Integration
+    // ============================
+
+    /// @notice The World ID router instance
+    IWorldID public worldId;
+
+    /// @notice The World ID external nullifier hash (actionId / appId)
+    uint256 public externalNullifierHash;
+
+    /// @notice The World ID group ID (1 for Orb, 0 for Phone)
+    uint256 public constant WORLD_ID_GROUP_ID = 1;
+
+    /// @notice Whether a nullifier hash has already been used to prevent Sybil registration
+    mapping(uint256 => bool) public nullifierHashes;
+
+    /// @notice Track if an attestor is verified with World ID
+    mapping(address => bool) public isWorldIdVerified;
+
+    /// @notice Whether World ID proof is strictly required for attestors
+    bool public requireWorldID;
+
+    event WorldIDRequirementUpdated(bool required);
 
     // ============================
     // Attestor Statistics & Rewards
@@ -46,6 +74,8 @@ contract AttestorRegistry is Ownable {
     uint256 public constant ATTESTATION_FEE = 9e17; // 0.9 ether fee per claim (covers 3 attestors)
 
     event AttestorRegistered(address indexed attestor);
+    event AttestorWorldIDVerified(address indexed attestor, uint256 nullifierHash);
+    event WorldIDConfigured(address indexed router, uint256 externalNullifierHash);
     event StakeAdded(address indexed attestor, uint256 amount);
     event ClaimAttested(uint256 indexed claimId, address indexed attestor, uint256 stakeAmount);
     event ClaimFlagged(uint256 indexed claimId, address indexed flagger, string reason);
@@ -59,9 +89,11 @@ contract AttestorRegistry is Ownable {
 
     /**
      * @notice Registers the caller as an attestor. Optionally accepts initial stake.
+     * @dev When requireWorldID is active, caller must register via registerWithWorldID.
      */
     function register() external payable {
         require(!attestors[msg.sender].isRegistered, "AttestorRegistry: already registered");
+        require(!requireWorldID || isWorldIdVerified[msg.sender], "AttestorRegistry: World ID verification required");
         
         attestors[msg.sender].isRegistered = true;
         
@@ -70,6 +102,95 @@ contract AttestorRegistry is Ownable {
         if (msg.value > 0) {
             _stakeETH(msg.sender, msg.value);
         }
+    }
+
+    /**
+     * @notice Registers caller as an attestor with World ID proof to guarantee 1-human-1-attestor Sybil resistance.
+     * @param root Merkle root of the World ID identity tree
+     * @param nullifierHash Unique nullifier for the user and action
+     * @param proof 8-element zkSNARK proof
+     */
+    function registerWithWorldID(
+        uint256 root,
+        uint256 nullifierHash,
+        uint256[8] calldata proof
+    ) external payable {
+        require(!attestors[msg.sender].isRegistered, "AttestorRegistry: already registered");
+        require(!nullifierHashes[nullifierHash], "AttestorRegistry: World ID already used");
+
+        if (address(worldId) != address(0)) {
+            uint256 signalHash = abi.encodePacked(msg.sender).hashToField();
+            worldId.verifyProof(
+                root,
+                WORLD_ID_GROUP_ID,
+                signalHash,
+                nullifierHash,
+                externalNullifierHash,
+                proof
+            );
+        }
+
+        nullifierHashes[nullifierHash] = true;
+        isWorldIdVerified[msg.sender] = true;
+        attestors[msg.sender].isRegistered = true;
+
+        emit AttestorRegistered(msg.sender);
+        emit AttestorWorldIDVerified(msg.sender, nullifierHash);
+
+        if (msg.value > 0) {
+            _stakeETH(msg.sender, msg.value);
+        }
+    }
+
+    /**
+     * @notice Allows an already registered attestor to link and verify their World ID proof.
+     */
+    function verifyWorldID(
+        uint256 root,
+        uint256 nullifierHash,
+        uint256[8] calldata proof
+    ) external {
+        require(attestors[msg.sender].isRegistered, "AttestorRegistry: not registered");
+        require(!isWorldIdVerified[msg.sender], "AttestorRegistry: already World ID verified");
+        require(!nullifierHashes[nullifierHash], "AttestorRegistry: World ID already used");
+
+        if (address(worldId) != address(0)) {
+            uint256 signalHash = abi.encodePacked(msg.sender).hashToField();
+            worldId.verifyProof(
+                root,
+                WORLD_ID_GROUP_ID,
+                signalHash,
+                nullifierHash,
+                externalNullifierHash,
+                proof
+            );
+        }
+
+        nullifierHashes[nullifierHash] = true;
+        isWorldIdVerified[msg.sender] = true;
+
+        emit AttestorWorldIDVerified(msg.sender, nullifierHash);
+    }
+
+    /**
+     * @notice Enables or disables strict on-chain World ID requirement.
+     */
+    function setRequireWorldID(bool _required) external onlyOwner {
+        requireWorldID = _required;
+        emit WorldIDRequirementUpdated(_required);
+    }
+
+    /**
+     * @notice Owner configuration for World ID router and action metadata.
+     */
+    function setWorldID(address _worldId, string memory _appId, string memory _actionId) external onlyOwner {
+        worldId = IWorldID(_worldId);
+        externalNullifierHash = abi.encodePacked(
+            abi.encodePacked(_appId).hashToField(),
+            _actionId
+        ).hashToField();
+        requireWorldID = true;
+        emit WorldIDConfigured(_worldId, externalNullifierHash);
     }
 
     /**
@@ -93,6 +214,7 @@ contract AttestorRegistry is Ownable {
      */
     function attestToClaim(uint256 claimId) external {
         require(attestors[msg.sender].isRegistered, "AttestorRegistry: not registered");
+        require(!requireWorldID || isWorldIdVerified[msg.sender], "AttestorRegistry: World ID verification required to attest");
         require(attestors[msg.sender].stake > 0, "AttestorRegistry: no stake");
         require(!hasAttested[claimId][msg.sender], "AttestorRegistry: already attested");
         require(!isFlagged[claimId], "AttestorRegistry: claim is flagged");

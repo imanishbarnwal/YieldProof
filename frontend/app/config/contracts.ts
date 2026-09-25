@@ -63,6 +63,90 @@ export const CONTRACTS = {
                     {
                         "indexed": false,
                         "internalType": "uint256",
+                        "name": "nullifierHash",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "AttestorWorldIDVerified",
+                "type": "event"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "isWorldIdVerified",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "root",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "nullifierHash",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256[8]",
+                        "name": "proof",
+                        "type": "uint256[8]"
+                    }
+                ],
+                "name": "registerWithWorldID",
+                "outputs": [],
+                "stateMutability": "payable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "root",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "nullifierHash",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256[8]",
+                        "name": "proof",
+                        "type": "uint256[8]"
+                    }
+                ],
+                "name": "verifyWorldID",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "attestor",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
                         "name": "amount",
                         "type": "uint256"
                     },
@@ -1288,5 +1372,94 @@ export const CONTRACTS = {
             }
         ]
     },
-
+    YieldProofENSManager: {
+        address: process.env.NEXT_PUBLIC_ENS_MANAGER_ADDRESS || "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+        abi: [
+            {
+                "inputs": [
+                    { "internalType": "string", "name": "label", "type": "string" }
+                ],
+                "name": "createAttestorSubname",
+                "outputs": [{ "internalType": "string", "name": "fullName", "type": "string" }],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "autoCreateAttestorSubname",
+                "outputs": [{ "internalType": "string", "name": "fullName", "type": "string" }],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+                "name": "attestorToSubname",
+                "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [{ "internalType": "string", "name": "", "type": "string" }],
+                "name": "labelToAttestor",
+                "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [{ "internalType": "bytes32", "name": "node", "type": "bytes32" }],
+                "name": "addr",
+                "outputs": [{ "internalType": "address payable", "name": "", "type": "address" }],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    { "internalType": "bytes32", "name": "node", "type": "bytes32" },
+                    { "internalType": "string", "name": "key", "type": "string" }
+                ],
+                "name": "text",
+                "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [{ "internalType": "string", "name": "labelOrSubname", "type": "string" }],
+                "name": "getAttestorProfile",
+                "outputs": [
+                    { "internalType": "address", "name": "attestorAddress", "type": "address" },
+                    { "internalType": "string", "name": "fullSubname", "type": "string" },
+                    { "internalType": "bool", "name": "isRegistered", "type": "bool" },
+                    { "internalType": "bool", "name": "isWorldIdVerified", "type": "bool" },
+                    { "internalType": "uint256", "name": "trustScore", "type": "uint256" },
+                    { "internalType": "uint256", "name": "successfulAttestations", "type": "uint256" },
+                    { "internalType": "uint256", "name": "totalAttestations", "type": "uint256" },
+                    { "internalType": "uint256", "name": "stakeAmount", "type": "uint256" },
+                    { "internalType": "uint256", "name": "totalRewardsClaimed", "type": "uint256" }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [{ "internalType": "string", "name": "name", "type": "string" }],
+                "name": "namehash",
+                "outputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
+                "stateMutability": "pure",
+                "type": "function"
+            },
+            {
+                "inputs": [{ "internalType": "string", "name": "label", "type": "string" }],
+                "name": "subnode",
+                "outputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "parentName",
+                "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ]
+    }
 };

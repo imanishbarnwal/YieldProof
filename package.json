@@ -7,10 +7,17 @@
     "frontend"
   ],
   "scripts": {
+    "dev": "npm run dev --workspace=frontend",
+    "build": "npm run contracts:compile && npm run frontend:build",
+    "test": "npm run contracts:test",
     "frontend": "npm run dev --workspace=frontend",
+    "frontend:dev": "npm run dev --workspace=frontend",
+    "frontend:build": "npm run build --workspace=frontend",
+    "frontend:lint": "npm run lint --workspace=frontend",
     "contracts:compile": "npm run compile --workspace=contracts",
     "contracts:test": "npm run test --workspace=contracts",
-    "contracts:deploy": "npm run deploy --workspace=contracts"
+    "contracts:deploy": "npm run deploy --workspace=contracts",
+    "contracts:node": "npm run node --workspace=contracts"
   },
   "devDependencies": {
     "concurrently": "^9.0.0"

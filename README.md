@@ -3,10 +3,28 @@
 
 YieldProof is on-chain yield verification infrastructure for RWAs on Mantle, enabling cryptoeconomic accountability through multi-party attestation with staked capital and automated reward/slashing mechanisms.
 
-**Deployed Status:** ✅ Live on Mantle Sepolia  
-**Total Lines of Code:** ~800 Solidity + 2,000+ TypeScript  
-**Test Coverage:** 13/13 tests passing (100% core functionality)  
+**Deployed Status:** ✅ Live on Mantle Sepolia & Sepolia Compatible  
+**Total Lines of Code:** ~1,100 Solidity + 2,500+ TypeScript  
+**Test Coverage:** 28/28 tests passing (100% core + World ID Sybil resistance + ENSv2 Identity Layer)  
+**Sybil Defense:** World ID (IDKit & zkSNARK on-chain verification)  
+**Decentralized Identity:** ENSv2 Subnames & Dynamic Reputation Resolution (`*.yieldproof.eth`)  
 **Audit Status:** Pre-audit (planned Q2 2025)
+
+---
+
+## Integrations (ETHGlobal Tokyo 2026)
+
+### 1. World ID Integration (Proof of Personhood)
+- **1-Human-1-Attestor**: Each attestor must provide a valid World ID zero-knowledge proof before registering or attesting.
+- **Nullifier Enforcement**: Action-scoped nullifiers (`nullifierHashes`) prevent any single human from creating multiple independent attestor addresses.
+- **Zero PII**: Only cryptographic proofs and nullifier hashes are checked; no personal identity or biometric data is ever collected or stored.
+- Documentation: [`docs/WORLD_ID_INTEGRATION.md`](file:///Users/imanishbarnwal/Downloads/yieldproof/YieldProof/docs/WORLD_ID_INTEGRATION.md)
+
+### 2. ENSv2 Identity & Reputation Layer
+- **Portable Decentralized Identity**: Approved attestors receive deterministic/custom subnames under `*.yieldproof.eth` (e.g. `attestor-007.yieldproof.eth`).
+- **Dynamic On-Chain Resolver**: Queries `addr` and text records (`app/yieldproof/status`, `app/yieldproof/trust-score`, `app/yieldproof/world-verified`, `app/yieldproof/claims-verified`, `app/yieldproof/stake`) in real time from protocol state without requiring gas-expensive writes on every attestation.
+- **Interactive Verification & Lookup**: Built-in ENS profile lookup tool and subname claim flow on the dashboard.
+- Documentation: [`docs/ENSV2_INTEGRATION.md`](file:///Users/imanishbarnwal/Downloads/yieldproof/YieldProof/docs/ENSV2_INTEGRATION.md)
 
 ---
 
@@ -14,7 +32,7 @@ YieldProof is on-chain yield verification infrastructure for RWAs on Mantle, ena
 
 **What:** YieldProof is on-chain yield verification infrastructure for RWAs on Mantle  
 **Why:** Current yield reporting is trust-based with no cryptoeconomic accountability  
-**How:** Multi-party attestation with staked capital + automated reward/slashing mechanism
+**How:** Multi-party attestation with staked capital + World ID Sybil resistance + automated reward/slashing mechanism
 
 ---
 

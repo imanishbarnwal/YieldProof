@@ -29,9 +29,14 @@ import {
     Plus
 } from 'lucide-react';
 import { useAccount, useReadContract, useReadContracts } from 'wagmi';
-import { formatEther, parseEther, formatUnits, type Abi } from 'viem';
+import { formatEther, parseEther, formatUnits, decodeAbiParameters, type Abi } from 'viem';
 import { CONTRACTS } from '@/app/config/contracts';
 import { useTransaction } from '@/hooks/useTransaction';
+import { WorldIDWidget, type WorldIDProofResult } from '@/components/WorldIDWidget';
+import { HumanVerificationCard } from '@/components/world/HumanVerificationCard';
+import { ENSIdentityCard } from '@/components/ens/ENSIdentityCard';
+import { ENSProfileLookup } from '@/components/ens/ENSProfileLookup';
+import { X } from 'lucide-react';
 
 // Enhanced data types
 interface Claim {
@@ -79,10 +84,36 @@ export default function AttestorPage() {
         accuracyRate: 0
     });
 
+    // World ID state
+    const [worldIdResult, setWorldIdResult] = useState<WorldIDProofResult | null>(null);
+    const [lookupSubnameModal, setLookupSubnameModal] = useState<string | null>(null);
+
+    // Read World ID status
+    const { data: isWorldIdVerifiedData, refetch: refetchWorldId } = useReadContract({
+        address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
+        abi: CONTRACTS.AttestorRegistry.abi as Abi,
+        functionName: 'isWorldIdVerified',
+        args: [address],
+        query: { enabled: !!address, refetchInterval: 5000 }
+    });
+    const isWorldIdVerified = Boolean(isWorldIdVerifiedData);
+
+    // Read ENS Subname
+    const { data: attestorSubnameData, refetch: refetchSubname } = useReadContract({
+        address: CONTRACTS.YieldProofENSManager.address as `0x${string}`,
+        abi: CONTRACTS.YieldProofENSManager.abi as Abi,
+        functionName: 'attestorToSubname',
+        args: [address],
+        query: { enabled: !!address, refetchInterval: 5000 }
+    });
+    const attestorSubname = attestorSubnameData as string | undefined;
+
     // Transaction hooks
     const { executeTransaction, isLoading: isTransactionLoading } = useTransaction({
         onSuccess: () => {
             refetchAttestor();
+            refetchWorldId();
+            refetchSubname();
             refetchClaims();
             refetchHasAttested();
             refetchTotalClaims();
@@ -291,11 +322,51 @@ export default function AttestorPage() {
 
     // Refetch on transaction success - handled by useTransaction hook now
 
+    const decodeProof = (proofStr?: string): readonly [bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint] => {
+        try {
+            if (proofStr?.startsWith('0x')) {
+                const decoded = decodeAbiParameters([{ type: 'uint256[8]' }], proofStr as `0x${string}`)[0];
+                return decoded as any;
+            }
+            if (proofStr) {
+                const parsed = JSON.parse(proofStr);
+                if (Array.isArray(parsed) && parsed.length === 8) {
+                    return parsed.map((x: any) => BigInt(x)) as any;
+                }
+            }
+        } catch {
+            // Fallback for mock/simulation proofs
+        }
+        return [BigInt(0), BigInt(1), BigInt(2), BigInt(3), BigInt(4), BigInt(5), BigInt(6), BigInt(7)];
+    };
+
     // Handlers
     const handleStake = async () => {
         if (!isConnected || !stakeAmount) return;
 
         const value = parseEther(stakeAmount);
+
+        // Check if registering with World ID proof
+        if (!isRegistered && worldIdResult) {
+            const root = BigInt(worldIdResult.merkle_root);
+            const nullifier = BigInt(worldIdResult.nullifier_hash);
+            const proofArray = decodeProof(worldIdResult.proof);
+
+            const transactionConfig: any = {
+                address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
+                abi: CONTRACTS.AttestorRegistry.abi as Abi,
+                functionName: 'registerWithWorldID',
+                args: [root, nullifier, proofArray],
+            };
+
+            if (value > 0) {
+                transactionConfig.value = value;
+            }
+
+            executeTransaction(transactionConfig);
+            return;
+        }
+
         const functionName = !isRegistered ? 'register' : 'stakeETH';
 
         const transactionConfig: any = {
@@ -309,6 +380,39 @@ export default function AttestorPage() {
         }
 
         executeTransaction(transactionConfig);
+    };
+
+    const handleLinkWorldID = async () => {
+        if (!isConnected || !worldIdResult) return;
+        const root = BigInt(worldIdResult.merkle_root);
+        const nullifier = BigInt(worldIdResult.nullifier_hash);
+        const proofArray = decodeProof(worldIdResult.proof);
+
+        executeTransaction({
+            address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
+            abi: CONTRACTS.AttestorRegistry.abi as Abi,
+            functionName: 'verifyWorldID',
+            args: [root, nullifier, proofArray],
+        });
+    };
+
+    const handleCreateSubname = async (label: string) => {
+        if (!isConnected || !label) return;
+        executeTransaction({
+            address: CONTRACTS.YieldProofENSManager.address as `0x${string}`,
+            abi: CONTRACTS.YieldProofENSManager.abi as Abi,
+            functionName: 'createAttestorSubname',
+            args: [label],
+        });
+    };
+
+    const handleAutoCreateSubname = async () => {
+        if (!isConnected) return;
+        executeTransaction({
+            address: CONTRACTS.YieldProofENSManager.address as `0x${string}`,
+            abi: CONTRACTS.YieldProofENSManager.abi as Abi,
+            functionName: 'autoCreateAttestorSubname',
+        });
     };
 
     const handleAttest = async (claimId: number) => {
@@ -461,111 +565,94 @@ export default function AttestorPage() {
                     {/* Sidebar - Attestor Status & Staking */}
                     <div className="lg:col-span-1 space-y-6">
                         <AnimatedSection delay={0.1}>
-                            <Card className="backdrop-blur-xl">
-                                <CardHeader>
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-primary/20 border border-primary/30 rounded-lg flex items-center justify-center">
-                                            <ShieldCheck className="w-5 h-5" />
-                                        </div>
-                                        <div>
-                                            <CardTitle>Attestor Status</CardTitle>
-                                            <CardDescription>Your verification power</CardDescription>
-                                        </div>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="space-y-6">
-                                    {/* Registration Status */}
-                                    <div className="flex items-center justify-between p-4 bg-primary/10 rounded-lg border border-primary/20">
-                                        <div>
-                                            <p className="font-medium">Registration</p>
-                                            <p className="text-sm">{isRegistered ? 'Active' : 'Required'}</p>
-                                        </div>
-                                        <div className={`w-3 h-3 rounded-full ${isRegistered ? 'bg-accent' : 'bg-destructive'}`} />
-                                    </div>
+                            <HumanVerificationCard
+                                isConnected={isConnected}
+                                walletAddress={address}
+                                isRegistered={isRegistered}
+                                isWorldIdVerified={isWorldIdVerified}
+                                currentStake={currentStake}
+                                stakeAmount={stakeAmount}
+                                setStakeAmount={setStakeAmount}
+                                onRegisterWithWorldID={(proofResult) => {
+                                    const root = BigInt(proofResult.merkle_root);
+                                    const nullifier = BigInt(proofResult.nullifier_hash);
+                                    const proofArray = decodeProof(proofResult.proof);
+                                    const value = parseEther(stakeAmount || '1.0');
 
-                                    {/* Current Stake */}
-                                    <div className="space-y-3">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm">Current Stake</span>
-                                            <span className="font-mono text-lg">{parseFloat(currentStake).toFixed(2)} MNT</span>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm">Trust Score</span>
-                                            <span className="font-mono">{attestorStats.trustScore.toFixed(0)}/100</span>
-                                        </div>
-                                    </div>
+                                    executeTransaction({
+                                        address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
+                                        abi: CONTRACTS.AttestorRegistry.abi as Abi,
+                                        functionName: 'registerWithWorldID',
+                                        args: [root, nullifier, proofArray],
+                                        value: value > 0 ? value : undefined,
+                                    });
+                                }}
+                                onStakeOnly={handleStake}
+                                onLinkWorldID={(proofResult) => {
+                                    const root = BigInt(proofResult.merkle_root);
+                                    const nullifier = BigInt(proofResult.nullifier_hash);
+                                    const proofArray = decodeProof(proofResult.proof);
 
-                                    {/* Staking Form */}
-                                    <div className="space-y-4 pt-4 border-t border-border">
-                                        <Input
-                                            label="Stake Amount (MNT)"
-                                            type="number"
-                                            value={stakeAmount}
-                                            onChange={(e) => setStakeAmount(e.target.value)}
-                                            placeholder="1.0"
-                                            helperText="Minimum 1.0 MNT required"
-                                            step="0.1"
-                                            min="0"
-                                        />
-
-                                        <Button
-                                            onClick={handleStake}
-                                            isLoading={isProcessing}
-                                            disabled={!isConnected || !stakeAmount}
-                                            variant="outline"
-                                            className="w-full"
-                                        >
-                                            {!isProcessing ? (
-                                                <>
-                                                    <Plus className="mr-2 h-4 w-4" />
-                                                    {isRegistered ? 'Add Stake' : 'Register & Stake'}
-                                                </>
-                                            ) : null}
-                                        </Button>
-
-                                        {/* Claim Rewards Button */}
-                                        {isRegistered && attestorStats.rewardsEarned > 0 && (
-                                            <Button
-                                                onClick={handleClaimRewards}
-                                                isLoading={isProcessing}
-                                                disabled={!isConnected}
-                                                variant="primary"
-                                                className="w-full"
-                                            >
-                                                {!isProcessing ? (
-                                                    <>
-                                                        <DollarSign className="mr-2 h-4 w-4" />
-                                                        Claim {attestorStats.rewardsEarned.toFixed(2)} MNT
-                                                    </>
-                                                ) : null}
-                                            </Button>
-                                        )}
-                                    </div>
-                                    {!isRegistered && (
-                                        <div className="space-y-3">
-                                            <div className="flex items-start gap-2 p-3 bg-accent/20 border border-accent/30 rounded-lg">
-                                                <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                                                <div className="text-xs">
-                                                    <p className="font-medium">Registration Required</p>
-                                                    <p className="mt-1">Stake MNT to become an attestor and start earning rewards.</p>
-                                                </div>
-                                            </div>
-
-                                            {/* Smart Contract Information */}
-                                            <div className="flex items-start gap-2 p-3 bg-primary/20 border border-primary/30 rounded-lg">
-                                                <DollarSign className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                                                <div className="text-xs">
-                                                    <p className="font-medium">Smart Contract Updated!</p>
-                                                    <p className="mt-1">
-                                                        Enhanced with improved attestor tracking and automatic gas optimization for better reliability.
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
+                                    executeTransaction({
+                                        address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
+                                        abi: CONTRACTS.AttestorRegistry.abi as Abi,
+                                        functionName: 'verifyWorldID',
+                                        args: [root, nullifier, proofArray],
+                                    });
+                                }}
+                                isProcessing={isProcessing}
+                            />
                         </AnimatedSection>
+
+                        {/* ENSv2 Identity Card */}
+                        <AnimatedSection delay={0.15}>
+                            <ENSIdentityCard
+                                subname={attestorSubname}
+                                isRegistered={isRegistered}
+                                isWorldIdVerified={isWorldIdVerified}
+                                trustScore={Math.round(attestorStats.trustScore)}
+                                claimsVerified={attestorStats.successfulAttestations}
+                                stake={currentStake}
+                                onCreateSubname={handleCreateSubname}
+                                onAutoCreateSubname={handleAutoCreateSubname}
+                                onOpenLookupModal={(subname) => setLookupSubnameModal(subname)}
+                                isProcessing={isProcessing}
+                            />
+                        </AnimatedSection>
+
+                        {/* Claim Rewards Card */}
+                        {isRegistered && (
+                            <AnimatedSection delay={0.2}>
+                                <Card className="backdrop-blur-xl">
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                                            <DollarSign className="w-4 h-4 text-primary" />
+                                            Rewards Center
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="flex justify-between items-center text-sm">
+                                            <span className="text-muted-foreground">Pending Rewards</span>
+                                            <span className="font-mono font-bold text-primary">{attestorStats.rewardsEarned.toFixed(2)} MNT</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-sm">
+                                            <span className="text-muted-foreground">Lifetime Claimed</span>
+                                            <span className="font-mono">{attestorStats.totalRewardsClaimed.toFixed(2)} MNT</span>
+                                        </div>
+                                        <Button
+                                            onClick={handleClaimRewards}
+                                            isLoading={isProcessing}
+                                            disabled={!isConnected || attestorStats.rewardsEarned <= 0}
+                                            variant="primary"
+                                            className="w-full text-xs font-medium"
+                                        >
+                                            <DollarSign className="mr-1.5 h-3.5 w-3.5" />
+                                            Claim {attestorStats.rewardsEarned.toFixed(2)} MNT
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            </AnimatedSection>
+                        )}
 
                         {/* Performance Metrics */}
                         <AnimatedSection delay={0.2}>
@@ -902,6 +989,18 @@ export default function AttestorPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Profile Lookup Modal */}
+            {lookupSubnameModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md">
+                    <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-card border border-sky-500/30 rounded-2xl shadow-2xl p-6">
+                        <ENSProfileLookup
+                            initialQuery={lookupSubnameModal}
+                            onClose={() => setLookupSubnameModal(null)}
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

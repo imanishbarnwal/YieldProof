@@ -72,7 +72,7 @@ export function useTransaction(options: UseTransactionOptions = {}) {
         }
     }, [error, showTransaction, hideTransaction, reset, options.onError]);
 
-    const executeTransaction = useCallback((contractCall: Parameters<typeof writeContract>[0]) => {
+    const executeTransaction = useCallback((contractCall: any) => {
         // Reset tracking for new transaction
         hasHandledSuccess.current = false;
         hasHandledError.current = false;
