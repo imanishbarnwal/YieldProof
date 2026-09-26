@@ -203,12 +203,10 @@ export function HumanVerificationCard({
                         <Button
                             type="button"
                             onClick={() => {
-                                if (worldIdResult) {
-                                    onRegisterWithWorldID(worldIdResult);
-                                }
+                                onRegisterWithWorldID(worldIdResult || ({} as any));
                             }}
                             isLoading={isProcessing}
-                            disabled={!isConnected || !hasCompletedVerification || !stakeAmount || parseFloat(stakeAmount) <= 0}
+                            disabled={!isConnected || !hasCompletedVerification}
                             variant="primary"
                             className="w-full font-medium"
                         >

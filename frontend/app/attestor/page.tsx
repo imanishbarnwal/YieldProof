@@ -343,43 +343,24 @@ export default function AttestorPage() {
     // Handlers
     const handleStake = async () => {
         if (!isConnected || !stakeAmount) return;
-
         const value = parseEther(stakeAmount);
+        if (value <= 0) return;
 
-        // Check if registering with World ID proof
-        if (!isRegistered && worldIdResult) {
-            const root = BigInt(worldIdResult.merkle_root);
-            const nullifier = BigInt(worldIdResult.nullifier_hash);
-            const proofArray = decodeProof(worldIdResult.proof);
-
-            const transactionConfig: any = {
-                address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
-                abi: CONTRACTS.AttestorRegistry.abi as Abi,
-                functionName: 'registerWithWorldID',
-                args: [root, nullifier, proofArray],
-            };
-
-            if (value > 0) {
-                transactionConfig.value = value;
-            }
-
-            executeTransaction(transactionConfig);
-            return;
-        }
-
-        const functionName = !isRegistered ? 'register' : 'stakeETH';
-
-        const transactionConfig: any = {
+        executeTransaction({
             address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
             abi: CONTRACTS.AttestorRegistry.abi as Abi,
-            functionName,
-        };
+            functionName: 'stakeETH',
+            value,
+        });
+    };
 
-        if (value > 0) {
-            transactionConfig.value = value;
-        }
-
-        executeTransaction(transactionConfig);
+    const handleRegister = async () => {
+        if (!isConnected) return;
+        executeTransaction({
+            address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
+            abi: CONTRACTS.AttestorRegistry.abi as Abi,
+            functionName: 'register',
+        });
     };
 
     const handleLinkWorldID = async () => {
@@ -573,19 +554,8 @@ export default function AttestorPage() {
                                 currentStake={currentStake}
                                 stakeAmount={stakeAmount}
                                 setStakeAmount={setStakeAmount}
-                                onRegisterWithWorldID={(proofResult) => {
-                                    const root = BigInt(proofResult.merkle_root);
-                                    const nullifier = BigInt(proofResult.nullifier_hash);
-                                    const proofArray = decodeProof(proofResult.proof);
-                                    const value = parseEther(stakeAmount || '1.0');
-
-                                    executeTransaction({
-                                        address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
-                                        abi: CONTRACTS.AttestorRegistry.abi as Abi,
-                                        functionName: 'registerWithWorldID',
-                                        args: [root, nullifier, proofArray],
-                                        value: value > 0 ? value : undefined,
-                                    });
+                                onRegisterWithWorldID={() => {
+                                    handleRegister();
                                 }}
                                 onStakeOnly={handleStake}
                                 onLinkWorldID={(proofResult) => {
