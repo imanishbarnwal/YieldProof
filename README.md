@@ -92,7 +92,7 @@ graph TD
 | **`YieldProof.sol`** | `0x723A0992D07Ed6e6789Fcdcfd63b05634302586c` | RWA yield claim registry, fee collection, lifecycle state machine |
 | **`AttestorRegistry.sol`** | `0x1c152de6172BDB84b0871731Ef494d12C7691C07` | World ID nullifier tracking, staking collateral, consensus voting, reward payouts, slashing |
 | **`YieldVault.sol`** | `0x671dA4C8D9277429e58fbFCa46C3163a17b97294` | Capital custody vault, verified yield unlocking, investor distribution |
-| **`YieldProofENSManager.sol`** | `0x1613beB3B2C4f22Ee086B2b38C1476A3cE7f78E8` | ENSv2 subname controller & dynamic reputation resolver |
+| **`YieldProofENSManager.sol`** | `0xB300d6D41c2f9a8fa3Fa3F0544EF829e4a33C12f` | ENSv2 subname controller & dynamic reputation resolver |
 
 ---
 

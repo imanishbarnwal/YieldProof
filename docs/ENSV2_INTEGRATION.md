@@ -129,7 +129,7 @@ In accordance with ENS standards (UTS-46 / ENSIP-15):
 | Variable | Default | Purpose |
 | :--- | :--- | :--- |
 | `NEXT_PUBLIC_ENS_PARENT_NAME` | `yieldproof.eth` | Parent domain name for subname issuance |
-| `NEXT_PUBLIC_ENS_MANAGER_ADDRESS` | `0x1613beB3B2C4f22Ee086B2b38C1476A3cE7f78E8` | Deployed `YieldProofENSManager` contract address |
+| `NEXT_PUBLIC_ENS_MANAGER_ADDRESS` | `0xB300d6D41c2f9a8fa3Fa3F0544EF829e4a33C12f` | Deployed `YieldProofENSManager` contract address |
 | `YIELDPROOF_ENS_PARENT` | `yieldproof.eth` | Node/Backend parent namespace reference |
 
 ---
