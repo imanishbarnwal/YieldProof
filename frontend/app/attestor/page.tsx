@@ -542,9 +542,9 @@ export default function AttestorPage() {
                     </div>
                 </AnimatedSection>
 
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                    {/* Sidebar - Attestor Status & Staking */}
-                    <div className="lg:col-span-1 space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+                    {/* Sidebar - Attestor Status, World ID, ENS & Staking */}
+                    <div className="lg:col-span-5 xl:col-span-4 space-y-6">
                         <AnimatedSection delay={0.1}>
                             <HumanVerificationCard
                                 isConnected={isConnected}
@@ -590,80 +590,81 @@ export default function AttestorPage() {
                             />
                         </AnimatedSection>
 
-                        {/* Claim Rewards Card */}
-                        {isRegistered && (
-                            <AnimatedSection delay={0.2}>
-                                <Card className="backdrop-blur-xl">
+                        {/* Rewards & Performance Section */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+                            {/* Claim Rewards Card */}
+                            {isRegistered && (
+                                <AnimatedSection delay={0.2}>
+                                    <Card className="backdrop-blur-xl border border-border/70 h-full flex flex-col justify-between">
+                                        <CardHeader className="pb-3">
+                                            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                                                <DollarSign className="w-4 h-4 text-primary" />
+                                                Rewards Center
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4 pt-1">
+                                            <div className="flex justify-between items-center text-sm">
+                                                <span className="text-muted-foreground">Pending Rewards</span>
+                                                <span className="font-mono font-bold text-primary">{attestorStats.rewardsEarned.toFixed(2)} MNT</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-sm">
+                                                <span className="text-muted-foreground">Lifetime Claimed</span>
+                                                <span className="font-mono">{attestorStats.totalRewardsClaimed.toFixed(2)} MNT</span>
+                                            </div>
+                                            <Button
+                                                onClick={handleClaimRewards}
+                                                isLoading={isProcessing}
+                                                disabled={!isConnected || attestorStats.rewardsEarned <= 0}
+                                                variant="primary"
+                                                className="w-full text-xs font-medium"
+                                            >
+                                                <DollarSign className="mr-1.5 h-3.5 w-3.5" />
+                                                Claim {attestorStats.rewardsEarned.toFixed(2)} MNT
+                                            </Button>
+                                        </CardContent>
+                                    </Card>
+                                </AnimatedSection>
+                            )}
+
+                            {/* Performance Metrics */}
+                            <AnimatedSection delay={0.25} className={isRegistered ? "" : "sm:col-span-2 lg:col-span-1"}>
+                                <Card className="backdrop-blur-xl border border-border/70 h-full">
                                     <CardHeader className="pb-3">
-                                        <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                                            <DollarSign className="w-4 h-4 text-primary" />
-                                            Rewards Center
-                                        </CardTitle>
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 bg-accent/20 border border-accent/30 rounded-lg flex items-center justify-center text-accent">
+                                                <BarChart3 className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                                <CardTitle className="text-sm">Performance</CardTitle>
+                                                <CardDescription className="text-xs">Attestation metrics</CardDescription>
+                                            </div>
+                                        </div>
                                     </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="flex justify-between items-center text-sm">
-                                            <span className="text-muted-foreground">Pending Rewards</span>
-                                            <span className="font-mono font-bold text-primary">{attestorStats.rewardsEarned.toFixed(2)} MNT</span>
+                                    <CardContent className="space-y-2.5 pt-1">
+                                        <div className="flex justify-between items-center text-xs">
+                                            <span className="text-muted-foreground">Success Rate</span>
+                                            <span className="font-mono font-semibold">{attestorStats.accuracyRate.toFixed(1)}%</span>
                                         </div>
-                                        <div className="flex justify-between items-center text-sm">
-                                            <span className="text-muted-foreground">Lifetime Claimed</span>
-                                            <span className="font-mono">{attestorStats.totalRewardsClaimed.toFixed(2)} MNT</span>
+                                        <div className="flex justify-between items-center text-xs">
+                                            <span className="text-muted-foreground">Verified Claims</span>
+                                            <span className="font-mono font-semibold">{attestorStats.successfulAttestations}</span>
                                         </div>
-                                        <Button
-                                            onClick={handleClaimRewards}
-                                            isLoading={isProcessing}
-                                            disabled={!isConnected || attestorStats.rewardsEarned <= 0}
-                                            variant="primary"
-                                            className="w-full text-xs font-medium"
-                                        >
-                                            <DollarSign className="mr-1.5 h-3.5 w-3.5" />
-                                            Claim {attestorStats.rewardsEarned.toFixed(2)} MNT
-                                        </Button>
+                                        <div className="flex justify-between items-center text-xs">
+                                            <span className="text-muted-foreground">Rewards Earned</span>
+                                            <span className="font-mono font-semibold">{attestorStats.rewardsEarned.toFixed(2)} MNT</span>
+                                        </div>
                                     </CardContent>
                                 </Card>
                             </AnimatedSection>
-                        )}
-
-                        {/* Performance Metrics */}
-                        <AnimatedSection delay={0.2}>
-                            <Card className="backdrop-blur-xl">
-                                <CardHeader>
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-accent/20 border border-accent/30 rounded-lg flex items-center justify-center">
-                                            <BarChart3 className="w-5 h-5" />
-                                        </div>
-                                        <div>
-                                            <CardTitle>Performance</CardTitle>
-                                            <CardDescription>Your attestation metrics</CardDescription>
-                                        </div>
-
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="space-y-3">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm">Success Rate</span>
-                                            <span className="font-mono">{attestorStats.accuracyRate.toFixed(1)}%</span>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm">Verified Claims</span>
-                                            <span className="font-mono">{attestorStats.successfulAttestations}</span>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm">Rewards Earned</span>
-                                            <span className="font-mono">{attestorStats.rewardsEarned.toFixed(2)} MNT</span>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </AnimatedSection>
+                        </div>
                     </div>
-                    {/* Main Content */}
-                    <div className="lg:col-span-3 space-y-8">
+
+                    {/* Main Content - Claims Verification Queue */}
+                    <div className="lg:col-span-7 xl:col-span-8 space-y-6">
                         {/* Tab Navigation & Search */}
                         <AnimatedSection delay={0.3}>
-                            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                                <div className="flex bg-muted/50 rounded-lg p-1 border border-border">
+                            <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
+                                <div className="flex bg-muted/50 rounded-xl p-1 border border-border overflow-x-auto no-scrollbar">
                                     {[
                                         { key: 'pending', label: 'Pending Verification', count: pendingClaims.length, icon: Clock },
                                         { key: 'attested', label: 'Attested', count: attestedClaims.length, icon: Eye },
@@ -672,26 +673,26 @@ export default function AttestorPage() {
                                         <button
                                             key={key}
                                             onClick={() => setSelectedTab(key as any)}
-                                            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${selectedTab === key
-                                                ? 'bg-primary shadow-lg'
-                                                : 'hover:bg-muted'
+                                            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-200 ${selectedTab === key
+                                                ? 'bg-primary text-primary-foreground shadow-md'
+                                                : 'hover:bg-muted text-muted-foreground hover:text-foreground'
                                                 }`}
                                         >
-                                            <Icon className="w-4 h-4" />
-                                            <span className="hidden sm:inline">{label}</span>
-                                            <Badge variant="secondary" className="ml-1 text-xs">
+                                            <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                                            <span>{label}</span>
+                                            <Badge variant={selectedTab === key ? "secondary" : "outline"} className="ml-1 text-[10px] sm:text-xs px-1.5 py-0.5">
                                                 {count}
                                             </Badge>
                                         </button>
                                     ))}
                                 </div>
 
-                                <div className="flex gap-3">
+                                <div className="flex gap-2 items-center">
                                     <Input
                                         placeholder="Search claims..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-64"
+                                        className="w-full md:w-56 text-xs sm:text-sm"
                                     />
                                     <Button
                                         variant="outline"
@@ -702,13 +703,15 @@ export default function AttestorPage() {
                                             refetchClaimStakes();
                                             refetchAttestorLists();
                                         }}
-                                        className="hover:bg-muted"
+                                        className="hover:bg-muted shrink-0 h-10 px-3"
+                                        title="Refresh claims"
                                     >
                                         <RefreshCw className="w-4 h-4" />
                                     </Button>
                                 </div>
                             </div>
                         </AnimatedSection>
+
                         {/* Claims List */}
                         <AnimatedSection delay={0.4}>
                             <div className="space-y-4">
@@ -716,10 +719,10 @@ export default function AttestorPage() {
                                     <Card>
                                         <CardContent className="text-center py-12">
                                             <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                <ShieldCheck className="w-8 h-8" />
+                                                <ShieldCheck className="w-8 h-8 text-primary" />
                                             </div>
                                             <h3 className="text-lg font-medium mb-2">Connect Your Wallet</h3>
-                                            <p className="text-sm max-w-sm mx-auto">
+                                            <p className="text-sm max-w-sm mx-auto text-muted-foreground">
                                                 Connect your wallet to view and attest to yield claims.
                                             </p>
                                         </CardContent>
@@ -745,14 +748,14 @@ export default function AttestorPage() {
                                     <Card>
                                         <CardContent className="text-center py-12">
                                             <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                <FileText className="w-8 h-8" />
+                                                <FileText className="w-8 h-8 text-muted-foreground" />
                                             </div>
                                             <h3 className="text-lg font-medium mb-2">
                                                 {selectedTab === 'pending' ? 'No Claims to Verify' :
                                                     selectedTab === 'attested' ? 'No Pending Attestations' :
                                                         'No Attestation History'}
                                             </h3>
-                                            <p className="text-sm max-w-sm mx-auto">
+                                            <p className="text-sm max-w-sm mx-auto text-muted-foreground">
                                                 {selectedTab === 'pending' ? 'All claims have been verified or no new claims are available.' :
                                                     selectedTab === 'attested' ? 'You have no pending attestations waiting for finalization.' :
                                                         'You haven\'t completed any attestations yet.'}
@@ -762,125 +765,119 @@ export default function AttestorPage() {
                                 ) : (
                                     <StaggeredContainer key={selectedTab} className="space-y-4" staggerDelay={0.1}>
                                         {filteredClaims.map((claim) => (
-                                            <Card key={claim.id} className="hover:bg-muted/30 transition-all duration-300">
-                                                <CardContent className="p-6">
-                                                    <div className="flex items-start justify-between">
-                                                        <div className="flex-1 space-y-4">
-                                                            {/* Header */}
-                                                            <div className="flex items-start justify-between">
-                                                                <div>
-                                                                    <div className="flex items-center gap-3 mb-2">
-                                                                        <h3 className="text-lg font-semibold">{claim.assetId}</h3>
-                                                                        <Badge variant={getStatusColor(claim.status) as any}>
-                                                                            {getStatusLabel(claim.status)}
-                                                                        </Badge>
-                                                                    </div>
-                                                                    <p className="text-sm">Period: {claim.period}</p>
-                                                                </div>
-                                                                <div className="text-right">
-                                                                    <p className="text-2xl font-bold">
-                                                                        {claim.yieldAmount.toLocaleString(undefined, {
-                                                                            minimumFractionDigits: 0,
-                                                                            maximumFractionDigits: 6
-                                                                        })} MNT
-                                                                    </p>
-                                                                    <p className="text-sm">Claimed Yield</p>
-                                                                </div>
+                                            <Card key={claim.id} className="hover:border-primary/40 transition-all duration-300 shadow-md">
+                                                <CardContent className="p-5 sm:p-6 space-y-4">
+                                                    {/* Header */}
+                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/50">
+                                                        <div className="space-y-1">
+                                                            <div className="flex flex-wrap items-center gap-2.5">
+                                                                <h3 className="text-base sm:text-lg font-bold text-foreground">{claim.assetId}</h3>
+                                                                <Badge variant={getStatusColor(claim.status) as any} className="text-xs font-medium">
+                                                                    {getStatusLabel(claim.status)}
+                                                                </Badge>
                                                             </div>
-
-                                                            {/* Metrics */}
-                                                            <div className="grid grid-cols-3 gap-4">
-                                                                <div className="text-center p-3 bg-muted/30 rounded-lg">
-                                                                    <p className="text-xs">Attestors</p>
-                                                                    <p className="font-mono">
-                                                                        {claim.attestorCount || 0}/{claim.requiredAttestors || 3}
-                                                                    </p>
-                                                                </div>
-                                                                <div className="text-center p-3 bg-muted/30 rounded-lg">
-                                                                    <p className="text-xs">Total Stake</p>
-                                                                    <p className="font-mono">
-                                                                        {parseFloat(claim.currentBacking || '0').toFixed(2)} MNT
-                                                                    </p>
-                                                                </div>
-                                                                <div className="text-center p-3 bg-muted/30 rounded-lg">
-                                                                    <p className="text-xs">Progress</p>
-                                                                    <p className="font-mono">
-                                                                        {Math.round((claim.attestorCount || 0) / (claim.requiredAttestors || 1) * 100)}%
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                            {/* Progress Bar */}
-                                                            <div className="space-y-2">
-                                                                <div className="flex justify-between text-xs">
-                                                                    <span>Attestation Progress</span>
-                                                                    <span>{claim.attestorCount || 0} / {claim.requiredAttestors || 3} required</span>
-                                                                </div>
-                                                                <div className="w-full bg-muted rounded-full h-2">
-                                                                    <div
-                                                                        className="bg-gradient-to-r from-primary to-accent h-2 rounded-full transition-all duration-500"
-                                                                        style={{
-                                                                            width: `${Math.min(100, ((claim.attestorCount || 0) / (claim.requiredAttestors || 1)) * 100)}%`
-                                                                        }}
-                                                                    />
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Document Link */}
-                                                            <div className="flex items-center justify-between pt-2 border-t border-border">
-                                                                <div className="flex items-center gap-2">
-                                                                    <FileText className="w-4 h-4" />
-                                                                    <span className="text-xs font-mono">
-                                                                        {claim.documentHash.slice(0, 20)}...
-                                                                    </span>
-                                                                </div>
-                                                                {selectedTab !== 'history' && (
-                                                                    <a
-                                                                        href={claim.documentHash.startsWith('ipfs://')
-                                                                            ? `https://gateway.pinata.cloud/ipfs/${claim.documentHash.replace('ipfs://', '')}`
-                                                                            : '#'}
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                        className="flex items-center gap-1 text-sm transition-colors hover:opacity-80"
-                                                                    >
-                                                                        <ExternalLink className="w-3 h-3" />
-                                                                        View Proof
-                                                                    </a>
-                                                                )}
-                                                            </div>
+                                                            <p className="text-xs text-muted-foreground">Period: <span className="font-mono text-foreground/80">{claim.period}</span></p>
                                                         </div>
-                                                        {/* Actions */}
+                                                        <div className="sm:text-right bg-primary/5 sm:bg-transparent p-2.5 sm:p-0 rounded-lg">
+                                                            <p className="text-xl sm:text-2xl font-bold font-display text-primary">
+                                                                {claim.yieldAmount.toLocaleString(undefined, {
+                                                                    minimumFractionDigits: 0,
+                                                                    maximumFractionDigits: 6
+                                                                })} <span className="text-sm font-sans font-medium text-foreground">MNT</span>
+                                                            </p>
+                                                            <p className="text-xs text-muted-foreground">Claimed Yield</p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Metrics Grid */}
+                                                    <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                                                        <div className="text-center p-2.5 sm:p-3 bg-muted/40 rounded-xl border border-border/50">
+                                                            <p className="text-[10px] sm:text-xs text-muted-foreground uppercase font-medium">Attestors</p>
+                                                            <p className="font-mono font-bold text-xs sm:text-sm mt-0.5">
+                                                                {claim.attestorCount || 0} / {claim.requiredAttestors || 3}
+                                                            </p>
+                                                        </div>
+                                                        <div className="text-center p-2.5 sm:p-3 bg-muted/40 rounded-xl border border-border/50">
+                                                            <p className="text-[10px] sm:text-xs text-muted-foreground uppercase font-medium">Total Stake</p>
+                                                            <p className="font-mono font-bold text-xs sm:text-sm mt-0.5">
+                                                                {parseFloat(claim.currentBacking || '0').toFixed(2)} MNT
+                                                            </p>
+                                                        </div>
+                                                        <div className="text-center p-2.5 sm:p-3 bg-muted/40 rounded-xl border border-border/50">
+                                                            <p className="text-[10px] sm:text-xs text-muted-foreground uppercase font-medium">Progress</p>
+                                                            <p className="font-mono font-bold text-xs sm:text-sm mt-0.5">
+                                                                {Math.round((claim.attestorCount || 0) / (claim.requiredAttestors || 1) * 100)}%
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Progress Bar */}
+                                                    <div className="space-y-1.5">
+                                                        <div className="flex justify-between text-xs text-muted-foreground">
+                                                            <span>Attestation Progress</span>
+                                                            <span className="font-mono">{claim.attestorCount || 0} / {claim.requiredAttestors || 3} required</span>
+                                                        </div>
+                                                        <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                                                            <div
+                                                                className="bg-gradient-to-r from-primary to-accent h-2 rounded-full transition-all duration-500"
+                                                                style={{
+                                                                    width: `${Math.min(100, ((claim.attestorCount || 0) / (claim.requiredAttestors || 1)) * 100)}%`
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Document Link & Actions Row */}
+                                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-border/60">
+                                                        <div className="flex items-center gap-2 min-w-0">
+                                                            <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
+                                                            <span className="text-xs font-mono text-muted-foreground truncate max-w-[180px] sm:max-w-[220px]">
+                                                                {claim.documentHash}
+                                                            </span>
+                                                            {claim.documentHash.startsWith('ipfs://') && (
+                                                                <a
+                                                                    href={`https://gateway.pinata.cloud/ipfs/${claim.documentHash.replace('ipfs://', '')}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline ml-1 shrink-0"
+                                                                >
+                                                                    <ExternalLink className="w-3 h-3" />
+                                                                    View Proof
+                                                                </a>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Actions according to tab */}
                                                         {selectedTab === 'pending' && (
-                                                            <div className="flex flex-col gap-3 ml-6">
-                                                                {/* Show finalize button if claim has enough attestors */}
-                                                                {(claim.attestorCount || 0) >= (claim.requiredAttestors || 3) && (
+                                                            <div className="flex items-center gap-2 shrink-0">
+                                                                {(claim.attestorCount || 0) >= (claim.requiredAttestors || 3) ? (
                                                                     <Button
                                                                         onClick={() => handleFinalizeClaim(claim.id)}
                                                                         isLoading={isProcessing}
                                                                         disabled={!isConnected}
                                                                         variant="success"
-                                                                        className="px-6"
+                                                                        size="sm"
+                                                                        className="text-xs px-4"
                                                                     >
                                                                         {!isProcessing ? (
                                                                             <>
-                                                                                <CheckCircle2 className="w-4 h-4 mr-2" />
+                                                                                <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
                                                                                 Finalize & Reward
                                                                             </>
                                                                         ) : null}
                                                                     </Button>
-                                                                )}
-
-                                                                {/* Regular attest button */}
-                                                                {(claim.attestorCount || 0) < (claim.requiredAttestors || 3) && (
+                                                                ) : (
                                                                     <Button
                                                                         onClick={() => handleAttest(claim.id)}
                                                                         isLoading={isProcessing}
                                                                         disabled={!isConnected || parseFloat(currentStake) <= 0}
                                                                         variant="primary"
-                                                                        className="px-6"
+                                                                        size="sm"
+                                                                        className="text-xs px-4 font-semibold"
                                                                     >
                                                                         {!isProcessing ? (
                                                                             <>
-                                                                                <ShieldCheck className="w-4 h-4 mr-2" />
+                                                                                <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
                                                                                 Attest
                                                                             </>
                                                                         ) : null}
@@ -889,63 +886,39 @@ export default function AttestorPage() {
 
                                                                 <Button
                                                                     variant="outline"
+                                                                    size="sm"
                                                                     onClick={() => handleFlag(claim.id)}
                                                                     isLoading={isProcessing}
-                                                                    className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive/80"
+                                                                    className="text-xs border-destructive/40 text-destructive hover:bg-destructive/10"
                                                                 >
-                                                                    <Flag className="w-4 h-4 mr-2" />
+                                                                    <Flag className="w-3.5 h-3.5 mr-1" />
                                                                     Flag
                                                                 </Button>
                                                             </div>
                                                         )}
 
                                                         {selectedTab === 'attested' && (
-                                                            <div className="flex items-center gap-2 ml-6">
-                                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                                                <span className="text-sm font-medium">Verifying...</span>
+                                                            <div className="flex items-center gap-2 text-xs font-medium text-sky-400 bg-sky-500/10 px-3 py-1.5 rounded-lg border border-sky-500/20 shrink-0">
+                                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                                <span>Attestation active & awaiting final quorum...</span>
                                                             </div>
                                                         )}
 
                                                         {selectedTab === 'history' && (
-                                                            <div className="flex flex-col gap-3 ml-6">
-                                                                <div className="bg-muted/50 rounded-lg p-4 border border-accent/30">
-                                                                    <div className="flex items-center gap-2 mb-3">
-                                                                        <CheckCircle2 className="w-5 h-5" />
-                                                                        <span className="text-sm font-semibold">Attestation Complete</span>
-                                                                    </div>
-                                                                    <div className="space-y-2 text-sm">
-                                                                        <div className="flex justify-between items-center">
-                                                                            <span>Required Attestors:</span>
-                                                                            <span className="font-mono">{claim.requiredAttestors}</span>
-                                                                        </div>
-                                                                        <div className="flex justify-between items-center">
-                                                                            <span>Attestors Reached:</span>
-                                                                            <span className="font-mono font-semibold">{claim.attestorCount || 0}</span>
-                                                                        </div>
-                                                                        <div className="flex justify-between items-center pt-2 border-t border-border">
-                                                                            <span>Criteria Fulfilled:</span>
-                                                                            <span className="font-mono font-bold">
-                                                                                {claim.attestorCount || 0}/{claim.requiredAttestors || 3} ✓
-                                                                            </span>
-                                                                        </div>
-                                                                        <div className="flex justify-between items-center">
-                                                                            <span>Final Status:</span>
-                                                                            <Badge variant={getStatusColor(claim.status) as any} className="ml-2">
-                                                                                {getStatusLabel(claim.status)}
-                                                                            </Badge>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
+                                                            <div className="flex items-center gap-2 text-xs font-medium text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20 shrink-0">
+                                                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                                                <span>Verification Recorded ✓</span>
                                                             </div>
                                                         )}
                                                     </div>
+
                                                     {/* Warning for insufficient stake */}
                                                     {selectedTab === 'pending' && parseFloat(currentStake) <= 0 && (
-                                                        <div className="mt-4 flex items-start gap-2 p-3 bg-accent/20 border border-accent/30 rounded-lg">
-                                                            <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                                                            <div className="text-xs">
-                                                                <p className="font-medium">Insufficient Stake</p>
-                                                                <p className="mt-1">You must stake MNT to attest to claims.</p>
+                                                        <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-300 text-xs">
+                                                            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+                                                            <div>
+                                                                <p className="font-semibold">Insufficient Stake</p>
+                                                                <p className="text-amber-300/80 mt-0.5">You must stake at least 1.0 MNT to participate in attestation.</p>
                                                             </div>
                                                         </div>
                                                     )}
@@ -962,7 +935,7 @@ export default function AttestorPage() {
 
             {/* Profile Lookup Modal */}
             {lookupSubnameModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-background/85 backdrop-blur-md overflow-y-auto">
                     <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-card border border-sky-500/30 rounded-2xl shadow-2xl p-6">
                         <ENSProfileLookup
                             initialQuery={lookupSubnameModal}
