@@ -213,5 +213,5 @@ npm run contracts:test
 
 ## 14. ETHGlobal Tokyo 2026 Submission
 
-* **Team**: Manish Barnwal & Contributors
+* **Team**: Manish Barnwal
 * **License**: MIT
