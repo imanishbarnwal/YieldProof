@@ -45,7 +45,11 @@ export default function RootLayout({
     children: React.ReactNode;
 }) {
     return (
-        <html lang="en" className={`dark ${syne.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}>
+        <html
+            lang="en"
+            suppressHydrationWarning
+            className={`dark ${syne.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}
+        >
             <head>
                 <script
                     dangerouslySetInnerHTML={{
@@ -67,7 +71,10 @@ export default function RootLayout({
                     }}
                 />
             </head>
-            <body className={`${dmSans.className} antialiased bg-background text-foreground`}>
+            <body
+                suppressHydrationWarning
+                className={`${dmSans.className} antialiased bg-background text-foreground`}
+            >
                 <Providers>
                     <ToastProvider>
                         <LayoutClient>
