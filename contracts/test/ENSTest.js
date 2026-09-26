@@ -136,4 +136,61 @@ describe("ENSv2 Identity & Reputation Layer Integration", function () {
         expect(profile.isWorldIdVerified).to.be.true;
         expect(profile.stakeAmount).to.equal(ethers.parseEther("5.0"));
     });
+
+    it("10. Should reject empty subname label", async function () {
+        await expect(
+            ensManager.connect(attestor1).createAttestorSubname("")
+        ).to.be.revertedWith("ENSManager: label cannot be empty");
+    });
+
+    it("11. Should reject creating a second subname for the same attestor", async function () {
+        await ensManager.connect(attestor1).createAttestorSubname("attestor-007");
+        await expect(
+            ensManager.connect(attestor1).createAttestorSubname("attestor-008")
+        ).to.be.revertedWith("ENSManager: attestor already has an ENS subname");
+    });
+
+    it("12. Should reject unauthorized parent name updates", async function () {
+        await expect(
+            ensManager.connect(attacker).setParentName("hacked.eth")
+        ).to.be.revertedWithCustomError(ensManager, "OwnableUnauthorizedAccount");
+    });
+
+    it("13. Should return empty profile for non-existent name", async function () {
+        const profile = await ensManager.getAttestorProfile("nonexistent");
+        expect(profile.attestorAddress).to.equal(ethers.ZeroAddress);
+        expect(profile.isRegistered).to.be.false;
+    });
+
+    it("14. Should dynamically update text records when attestor earns reputation on-chain", async function () {
+        // Deploy YieldProof
+        const YieldProof = await ethers.getContractFactory("YieldProof");
+        const yieldProof = await YieldProof.deploy(await attestorRegistry.getAddress());
+        await yieldProof.waitForDeployment();
+
+        // Register attestor2 and attestor3
+        await attestorRegistry.connect(attestor2).registerWithWorldID(sampleRoot, nullifier2, sampleProof, { value: ethers.parseEther("2.0") });
+        const [, , , , attestor3] = await ethers.getSigners();
+        await attestorRegistry.connect(attestor3).registerWithWorldID(sampleRoot, 999111, sampleProof, { value: ethers.parseEther("2.0") });
+
+        // Attestor1 creates ENS subname
+        await ensManager.connect(attestor1).createAttestorSubname("top-attestor");
+        const node = await ensManager.subnode("top-attestor");
+
+        // Initial verified claims is 0
+        expect(await ensManager.text(node, "app/yieldproof/claims-verified")).to.equal("0");
+
+        // Submit and attest to a claim
+        await yieldProof.connect(owner).submitClaim("RWA-GOLD-2026", "Q1", ethers.parseEther("10"), "ipfs://doc", { value: ethers.parseEther("0.9") });
+        await attestorRegistry.connect(attestor1).attestToClaim(0);
+        await attestorRegistry.connect(attestor2).attestToClaim(0);
+        await attestorRegistry.connect(attestor3).attestToClaim(0);
+
+        // Finalize claim
+        await attestorRegistry.finalizeAndReward(0);
+
+        // Dynamic ENS text record now resolves 1 verified claim without any ENS write transaction!
+        expect(await ensManager.text(node, "app/yieldproof/claims-verified")).to.equal("1");
+        expect(Number(await ensManager.text(node, "app/yieldproof/trust-score"))).to.be.greaterThan(0);
+    });
 });
