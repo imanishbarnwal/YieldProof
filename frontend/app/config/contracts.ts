@@ -8,6 +8,7 @@ export const CONTRACTS = {
     // AttestorRegistry: 0x1c152de6172BDB84b0871731Ef494d12C7691C07
     // YieldProof: 0x723A0992D07Ed6e6789Fcdcfd63b05634302586c
     // YieldVault: 0x671dA4C8D9277429e58fbFCa46C3163a17b97294
+    // YieldProofENSManager: 0xB300d6D41c2f9a8fa3Fa3F0544EF829e4a33C12f
     AttestorRegistry: {
         address: "0x1c152de6172BDB84b0871731Ef494d12C7691C07",
         abi: [
@@ -1373,7 +1374,7 @@ export const CONTRACTS = {
         ]
     },
     YieldProofENSManager: {
-        address: process.env.NEXT_PUBLIC_ENS_MANAGER_ADDRESS || "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+        address: (process.env.NEXT_PUBLIC_ENS_MANAGER_ADDRESS || "0xB300d6D41c2f9a8fa3Fa3F0544EF829e4a33C12f") as `0x${string}`,
         abi: [
             {
                 "inputs": [
