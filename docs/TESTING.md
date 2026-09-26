@@ -5,11 +5,12 @@
 YieldProof implements comprehensive automated test suites across all smart contract modules and frontend builds.
 
 ```
-Total Contract Tests: 28 passing (100%)
+Total Contract Tests: 47 passing (100%)
+- RWA Tokenization & Consensus Flow: 9 tests
 - Core Economic Flow: 8 tests
 - Lifetime Rewards Tracking: 5 tests
-- World ID Sybil Resistance: 6 tests
-- ENSv2 Identity & Reputation Layer: 9 tests
+- World ID Sybil Resistance: 11 tests
+- ENSv2 Identity & Reputation Layer: 14 tests
 ```
 
 ---
