@@ -242,42 +242,58 @@ export function HumanVerificationCard({
 
             {/* Verification Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-                    <div className="relative w-full max-w-md p-6 bg-card border border-emerald-500/30 rounded-2xl shadow-2xl space-y-6">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                                <ShieldCheck className="w-5 h-5" />
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-background/85 backdrop-blur-md overflow-y-auto">
+                    <div className="relative w-full max-w-md max-h-[90vh] flex flex-col bg-card border border-emerald-500/30 rounded-2xl shadow-2xl overflow-hidden">
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between p-5 sm:p-6 pb-4 border-b border-border/50 shrink-0 bg-emerald-500/5">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                                    <ShieldCheck className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-base sm:text-lg text-foreground">World ID Verification</h3>
+                                    <p className="text-xs text-muted-foreground">Proof of Personhood for YieldProof Attestors</p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 className="font-semibold text-lg text-foreground">World ID Verification</h3>
-                                <p className="text-xs text-muted-foreground">Proof of Personhood for YieldProof Attestors</p>
-                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsModalOpen(false)}
+                                className="text-muted-foreground hover:text-foreground p-1.5 rounded-lg hover:bg-muted/50 transition-colors"
+                            >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
                         </div>
 
-                        <div className="space-y-3 text-sm text-muted-foreground bg-muted/30 p-4 rounded-xl border border-border">
-                            <div className="flex items-start gap-2">
-                                <Sparkles className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
-                                <p>Proves you are a real and unique human without revealing your wallet identity or personal information.</p>
+                        {/* Modal Body */}
+                        <div className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
+                            <div className="space-y-3 text-sm text-muted-foreground bg-muted/30 p-4 rounded-xl border border-border">
+                                <div className="flex items-start gap-2.5">
+                                    <Sparkles className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                                    <p className="leading-relaxed">Proves you are a real and unique human without revealing your wallet identity or personal information.</p>
+                                </div>
+                                <div className="flex items-start gap-2.5">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                                    <p className="leading-relaxed">Generates a zero-knowledge proof for action: <code className="text-emerald-300 font-mono text-xs px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">{action}</code></p>
+                                </div>
                             </div>
-                            <div className="flex items-start gap-2">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
-                                <p>Generates a zero-knowledge proof for action: <code className="text-emerald-300 font-mono text-xs">{action}</code></p>
-                            </div>
+
+                            {error && (
+                                <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-xs flex items-center gap-2">
+                                    <AlertCircle className="w-4 h-4 shrink-0" />
+                                    <span>{error}</span>
+                                </div>
+                            )}
                         </div>
 
-                        {error && (
-                            <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-xs flex items-center gap-2">
-                                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                                <span>{error}</span>
-                            </div>
-                        )}
-
-                        <div className="flex gap-3">
+                        {/* Modal Footer */}
+                        <div className="p-4 sm:p-5 border-t border-border/60 bg-muted/20 shrink-0 flex gap-3">
                             <Button
                                 type="button"
                                 variant="outline"
                                 onClick={() => setIsModalOpen(false)}
-                                className="w-1/2"
+                                className="w-1/2 text-xs"
                             >
                                 Cancel
                             </Button>
@@ -286,7 +302,7 @@ export function HumanVerificationCard({
                                 variant="primary"
                                 onClick={handleVerify}
                                 isLoading={verifying}
-                                className="w-1/2 bg-emerald-600 hover:bg-emerald-500 text-white"
+                                className="w-1/2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold"
                             >
                                 {verifying ? (
                                     <>
