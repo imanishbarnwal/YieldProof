@@ -69,6 +69,7 @@ export default function AttestorPage() {
     const [stakeAmount, setStakeAmount] = useState('1.0');
     const [selectedTab, setSelectedTab] = useState<'pending' | 'attested' | 'history'>('pending');
     const [searchTerm, setSearchTerm] = useState('');
+    const [activeAction, setActiveAction] = useState<string | null>(null);
 
     // State for different claim categories - initialize with proper defaults
     const [pendingClaims, setPendingClaims] = useState<Claim[]>([]);
@@ -111,6 +112,7 @@ export default function AttestorPage() {
     // Transaction hooks
     const { executeTransaction, isLoading: isTransactionLoading } = useTransaction({
         onSuccess: () => {
+            setActiveAction(null);
             refetchAttestor();
             refetchWorldId();
             refetchSubname();
@@ -120,6 +122,9 @@ export default function AttestorPage() {
             refetchClaimStakes();
             refetchAttestorLists();
             setStakeAmount('1.0'); // Reset stake amount on success
+        },
+        onError: () => {
+            setActiveAction(null);
         }
     });
 
@@ -346,6 +351,7 @@ export default function AttestorPage() {
         const value = parseEther(stakeAmount);
         if (value <= 0) return;
 
+        setActiveAction('stake');
         executeTransaction({
             address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
             abi: CONTRACTS.AttestorRegistry.abi as Abi,
@@ -356,6 +362,7 @@ export default function AttestorPage() {
 
     const handleRegister = async () => {
         if (!isConnected) return;
+        setActiveAction('register');
         executeTransaction({
             address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
             abi: CONTRACTS.AttestorRegistry.abi as Abi,
@@ -369,6 +376,7 @@ export default function AttestorPage() {
         const nullifier = BigInt(worldIdResult.nullifier_hash);
         const proofArray = decodeProof(worldIdResult.proof);
 
+        setActiveAction('worldid');
         executeTransaction({
             address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
             abi: CONTRACTS.AttestorRegistry.abi as Abi,
@@ -379,6 +387,7 @@ export default function AttestorPage() {
 
     const handleCreateSubname = async (label: string) => {
         if (!isConnected || !label) return;
+        setActiveAction('ens');
         executeTransaction({
             address: CONTRACTS.YieldProofENSManager.address as `0x${string}`,
             abi: CONTRACTS.YieldProofENSManager.abi as Abi,
@@ -389,6 +398,7 @@ export default function AttestorPage() {
 
     const handleAutoCreateSubname = async () => {
         if (!isConnected) return;
+        setActiveAction('ens');
         executeTransaction({
             address: CONTRACTS.YieldProofENSManager.address as `0x${string}`,
             abi: CONTRACTS.YieldProofENSManager.abi as Abi,
@@ -398,7 +408,7 @@ export default function AttestorPage() {
 
     const handleAttest = async (claimId: number) => {
         if (!isConnected) return;
-
+        setActiveAction(`attest-${claimId}`);
         executeTransaction({
             address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
             abi: CONTRACTS.AttestorRegistry.abi as Abi,
@@ -413,6 +423,7 @@ export default function AttestorPage() {
         const reason = window.prompt("Why are you flagging this claim?");
         if (!reason) return;
 
+        setActiveAction(`flag-${claimId}`);
         executeTransaction({
             address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
             abi: CONTRACTS.AttestorRegistry.abi as Abi,
@@ -423,7 +434,7 @@ export default function AttestorPage() {
 
     const handleClaimRewards = async () => {
         if (!isConnected) return;
-
+        setActiveAction('claimRewards');
         executeTransaction({
             address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
             abi: CONTRACTS.AttestorRegistry.abi as Abi,
@@ -433,7 +444,7 @@ export default function AttestorPage() {
 
     const handleFinalizeClaim = async (claimId: number) => {
         if (!isConnected) return;
-
+        setActiveAction(`finalize-${claimId}`);
         executeTransaction({
             address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
             abi: CONTRACTS.AttestorRegistry.abi as Abi,
@@ -563,6 +574,7 @@ export default function AttestorPage() {
                                     const nullifier = BigInt(proofResult.nullifier_hash);
                                     const proofArray = decodeProof(proofResult.proof);
 
+                                    setActiveAction('worldid');
                                     executeTransaction({
                                         address: CONTRACTS.AttestorRegistry.address as `0x${string}`,
                                         abi: CONTRACTS.AttestorRegistry.abi as Abi,
@@ -570,7 +582,7 @@ export default function AttestorPage() {
                                         args: [root, nullifier, proofArray],
                                     });
                                 }}
-                                isProcessing={isProcessing}
+                                isProcessing={isTransactionLoading && (activeAction === 'stake' || activeAction === 'register' || activeAction === 'worldid')}
                             />
                         </AnimatedSection>
 
@@ -586,7 +598,7 @@ export default function AttestorPage() {
                                 onCreateSubname={handleCreateSubname}
                                 onAutoCreateSubname={handleAutoCreateSubname}
                                 onOpenLookupModal={(subname) => setLookupSubnameModal(subname)}
-                                isProcessing={isProcessing}
+                                isProcessing={isTransactionLoading && activeAction === 'ens'}
                             />
                         </AnimatedSection>
 
@@ -613,7 +625,7 @@ export default function AttestorPage() {
                                             </div>
                                             <Button
                                                 onClick={handleClaimRewards}
-                                                isLoading={isProcessing}
+                                                isLoading={isTransactionLoading && activeAction === 'claimRewards'}
                                                 disabled={!isConnected || attestorStats.rewardsEarned <= 0}
                                                 variant="primary"
                                                 className="w-full text-xs font-medium"
@@ -853,13 +865,13 @@ export default function AttestorPage() {
                                                                 {(claim.attestorCount || 0) >= (claim.requiredAttestors || 3) ? (
                                                                     <Button
                                                                         onClick={() => handleFinalizeClaim(claim.id)}
-                                                                        isLoading={isProcessing}
+                                                                        isLoading={isTransactionLoading && activeAction === `finalize-${claim.id}`}
                                                                         disabled={!isConnected}
                                                                         variant="success"
                                                                         size="sm"
                                                                         className="text-xs px-4"
                                                                     >
-                                                                        {!isProcessing ? (
+                                                                        {!(isTransactionLoading && activeAction === `finalize-${claim.id}`) ? (
                                                                             <>
                                                                                 <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
                                                                                 Finalize & Reward
@@ -869,13 +881,13 @@ export default function AttestorPage() {
                                                                 ) : (
                                                                     <Button
                                                                         onClick={() => handleAttest(claim.id)}
-                                                                        isLoading={isProcessing}
+                                                                        isLoading={isTransactionLoading && activeAction === `attest-${claim.id}`}
                                                                         disabled={!isConnected || parseFloat(currentStake) <= 0}
                                                                         variant="primary"
                                                                         size="sm"
                                                                         className="text-xs px-4 font-semibold"
                                                                     >
-                                                                        {!isProcessing ? (
+                                                                        {!(isTransactionLoading && activeAction === `attest-${claim.id}`) ? (
                                                                             <>
                                                                                 <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
                                                                                 Attest
@@ -888,7 +900,7 @@ export default function AttestorPage() {
                                                                     variant="outline"
                                                                     size="sm"
                                                                     onClick={() => handleFlag(claim.id)}
-                                                                    isLoading={isProcessing}
+                                                                    isLoading={isTransactionLoading && activeAction === `flag-${claim.id}`}
                                                                     className="text-xs border-destructive/40 text-destructive hover:bg-destructive/10"
                                                                 >
                                                                     <Flag className="w-3.5 h-3.5 mr-1" />
