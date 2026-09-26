@@ -164,4 +164,65 @@ describe("World ID Sybil Resistance Integration", function () {
         expect(await attestorRegistry.rewardsEarned(attestor1.address)).to.equal(0);
         expect(await attestorRegistry.totalRewardsClaimed(attestor1.address)).to.equal(ethers.parseEther("0.3"));
     });
+
+    it("7. Should prevent second registration attempt on already registered wallet", async function () {
+        await attestorRegistry.connect(attestor1).registerWithWorldID(
+            sampleRoot,
+            nullifier1,
+            sampleProof,
+            { value: ethers.parseEther("1.0") }
+        );
+
+        await expect(
+            attestorRegistry.connect(attestor1).registerWithWorldID(
+                sampleRoot,
+                nullifier2,
+                sampleProof,
+                { value: ethers.parseEther("1.0") }
+            )
+        ).to.be.revertedWith("AttestorRegistry: already registered");
+    });
+
+    it("8. Should allow registered attestor to link World ID via verifyWorldID", async function () {
+        await attestorRegistry.setRequireWorldID(false);
+        await attestorRegistry.connect(attestor1).register({ value: ethers.parseEther("1.0") });
+        expect(await attestorRegistry.isWorldIdVerified(attestor1.address)).to.be.false;
+
+        await expect(
+            attestorRegistry.connect(attestor1).verifyWorldID(sampleRoot, nullifier1, sampleProof)
+        )
+            .to.emit(attestorRegistry, "AttestorWorldIDVerified")
+            .withArgs(attestor1.address, nullifier1);
+
+        expect(await attestorRegistry.isWorldIdVerified(attestor1.address)).to.be.true;
+        expect(await attestorRegistry.nullifierHashes(nullifier1)).to.be.true;
+    });
+
+    it("9. Should prevent linking World ID twice on the same wallet", async function () {
+        await attestorRegistry.setRequireWorldID(false);
+        await attestorRegistry.connect(attestor1).register({ value: ethers.parseEther("1.0") });
+        await attestorRegistry.connect(attestor1).verifyWorldID(sampleRoot, nullifier1, sampleProof);
+
+        await expect(
+            attestorRegistry.connect(attestor1).verifyWorldID(sampleRoot, nullifier2, sampleProof)
+        ).to.be.revertedWith("AttestorRegistry: already World ID verified");
+    });
+
+    it("10. Should reject verifyWorldID on unregistered wallet", async function () {
+        await expect(
+            attestorRegistry.connect(attacker).verifyWorldID(sampleRoot, nullifier1, sampleProof)
+        ).to.be.revertedWith("AttestorRegistry: not registered");
+    });
+
+    it("11. Should reject verifyWorldID with a nullifier already claimed by another user", async function () {
+        await attestorRegistry.setRequireWorldID(false);
+        await attestorRegistry.connect(attestor1).register({ value: ethers.parseEther("1.0") });
+        await attestorRegistry.connect(attestor2).register({ value: ethers.parseEther("1.0") });
+
+        await attestorRegistry.connect(attestor1).verifyWorldID(sampleRoot, nullifier1, sampleProof);
+
+        await expect(
+            attestorRegistry.connect(attestor2).verifyWorldID(sampleRoot, nullifier1, sampleProof)
+        ).to.be.revertedWith("AttestorRegistry: World ID already used");
+    });
 });
