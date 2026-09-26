@@ -10,6 +10,7 @@ import { Select } from '@/components/ui/Select';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { useAccount, useReadContract, useReadContracts } from 'wagmi';
+import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { formatEther, parseEther, type Abi } from 'viem';
 import { format, isAfter, isBefore, isValid } from 'date-fns';
 import { CONTRACTS } from '@/app/config/contracts';
@@ -38,7 +39,8 @@ import {
     Sparkles,
     Scale,
     Lock,
-    Coins
+    Coins,
+    Wallet
 } from 'lucide-react';
 
 // Types
@@ -78,6 +80,7 @@ interface EscrowFunding {
 
 export default function IssuerPage() {
     const { address, isConnected } = useAccount();
+    const { openConnectModal } = useConnectModal();
     const [selectedVault, setSelectedVault] = useState('YieldProof Demo Vault');
     const [disclosures, setDisclosures] = useState<Disclosure[]>([]);
     const [escrowFundings, setEscrowFundings] = useState<EscrowFunding[]>([]);
@@ -679,20 +682,39 @@ export default function IssuerPage() {
                                         )}
                                     </div>
 
-                                    <Button
-                                        type="submit"
-                                        variant="primary"
-                                        className="w-full"
-                                        isLoading={isTransactionLoading || isUploading}
-                                        disabled={!isConnected || !!dateValidationError}
-                                    >
-                                        {!isTransactionLoading ? (
-                                            <>
-                                                <PlusCircle className="mr-2 h-4 w-4" />
-                                                Submit Disclosure + Pay Fee ({attestationFee.toFixed(1)} MNT)
-                                            </>
-                                        ) : null}
-                                    </Button>
+                                    {!isConnected ? (
+                                        <Button
+                                            type="button"
+                                            variant="primary"
+                                            className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/20 text-white font-medium"
+                                            onClick={openConnectModal}
+                                        >
+                                            <Wallet className="mr-2 h-4 w-4" />
+                                            Connect Wallet to Submit Disclosure
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            type="submit"
+                                            variant="primary"
+                                            className="w-full"
+                                            isLoading={isTransactionLoading || isUploading}
+                                            disabled={
+                                                !formData.assetId.trim() ||
+                                                !formData.startDate ||
+                                                !formData.endDate ||
+                                                !formData.yieldAmount ||
+                                                !formData.documentHash ||
+                                                !!dateValidationError
+                                            }
+                                        >
+                                            {!isTransactionLoading ? (
+                                                <>
+                                                    <PlusCircle className="mr-2 h-4 w-4" />
+                                                    Submit Disclosure + Pay Fee ({attestationFee.toFixed(1)} MNT)
+                                                </>
+                                            ) : null}
+                                        </Button>
+                                    )}
 
                                     <div className="flex items-start gap-2 mt-4 p-3 bg-info/20 border border-info/30 rounded-lg">
                                         <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
@@ -907,20 +929,32 @@ export default function IssuerPage() {
                                         helperText="Amount of realized yield to deposit into escrow"
                                     />
 
-                                    <Button
-                                        type="submit"
-                                        variant="primary"
-                                        className="w-full"
-                                        isLoading={isTransactionLoading}
-                                        disabled={!isConnected}
-                                    >
-                                        {!isTransactionLoading ? (
-                                            <>
-                                                <Scale className="mr-2 h-4 w-4" />
-                                                Enforce Escrow Funding
-                                            </>
-                                        ) : null}
-                                    </Button>
+                                    {!isConnected ? (
+                                        <Button
+                                            type="button"
+                                            variant="primary"
+                                            className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/20 text-white font-medium"
+                                            onClick={openConnectModal}
+                                        >
+                                            <Wallet className="mr-2 h-4 w-4" />
+                                            Connect Wallet to Deposit Escrow
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            type="submit"
+                                            variant="primary"
+                                            className="w-full"
+                                            isLoading={isTransactionLoading}
+                                            disabled={!escrowData.amount || parseFloat(escrowData.amount) <= 0}
+                                        >
+                                            {!isTransactionLoading ? (
+                                                <>
+                                                    <Scale className="mr-2 h-4 w-4" />
+                                                    Enforce Escrow Funding
+                                                </>
+                                            ) : null}
+                                        </Button>
+                                    )}
 
                                     <div className="flex items-start gap-2 mt-4 p-3 bg-card/50 rounded-lg border border-border">
                                         <Lock className="w-4 h-4 mt-0.5 flex-shrink-0" />
